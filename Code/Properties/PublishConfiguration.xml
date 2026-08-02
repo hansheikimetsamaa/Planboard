@@ -1,0 +1,36 @@
+<Publish>
+  <ModId Value="" />
+  <DisplayName Value="Planboard" />
+  <ShortDescription Value="City Tasks &amp; Map Notes &amp; ToDo" />
+  <LongDescription># Planboard
+
+Planboard is a location-aware planning board for Cities: Skylines II. Create issues, notes, and ideas, keep them as list-only tasks, or attach them directly to places in your city.
+
+## Highlights
+
+- Create Issue, Note, and Idea entries.
+- Attach entries to map points, districts, roads, and buildings.
+- Track Open, Doing, and Done work with clear status icons.
+- Organize work with priorities, built-in or custom categories, one preferred deadline calendar, search, filters, and sorting.
+- Show map pins as compact icons or open sticky notes.
+- Keep planning data inside the city save.
+
+Planboard has no runtime mod dependencies and supports Cities: Skylines II 1.6.x.</LongDescription>
+  <Thumbnail Value="Properties/Thumbnail.png" />
+  <Screenshot Value="" />
+  <Tag Value="Code Mod" />
+  <ForumLink Value="" />
+  <ModVersion Value="0.1.0" />
+  <GameVersion Value="1.6.*" />
+  <RequiredDLC Value="" />
+  <ChangeLog>## 0.1.0 - Initial public release
+
+- Added location-aware issues, notes, and ideas.
+- Added list, detail, quick-pin, and sticky-note workflows.
+- Added status, priority, custom category, preferred deadline, search, filter, and sorting controls.
+- Added map visibility modes, marker navigation, and district quick creation.
+- Added recoverable deletion and resizable persistent windows.
+- Added versioned save data validation and repair reporting.</ChangeLog>
+  <ExternalLink Type="github" Url="" />
+  <AccessLevel Value="Private" />
+</Publish>

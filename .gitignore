@@ -1,0 +1,13 @@
+.DS_Store
+.idea/
+.pnpm-store/
+Inspiration/
+.vs/
+**/bin/
+**/obj/
+**/Library/
+UI/build/
+**/node_modules/
+*.user
+*.suo
+*.pid
