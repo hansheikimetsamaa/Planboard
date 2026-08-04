@@ -376,7 +376,10 @@ namespace Planboard.UI
         private Entity GetNavigationAnchor(Unity.Mathematics.float3 position)
         {
             if (!EntityManager.Exists(_navigationAnchor))
-                _navigationAnchor = EntityManager.CreateEntity(typeof(Transform));
+            {
+                _navigationAnchor = EntityManager.CreateEntity();
+                EntityManager.AddComponentData(_navigationAnchor, new Transform(position, Unity.Mathematics.quaternion.identity));
+            }
             EntityManager.SetComponentData(_navigationAnchor, new Transform(position, Unity.Mathematics.quaternion.identity));
             return _navigationAnchor;
         }

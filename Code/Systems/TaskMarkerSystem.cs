@@ -54,7 +54,9 @@ namespace Planboard.Systems
                 desired.Add(entry.Id);
                 if (!_markers.TryGetValue(entry.Id, out Entity marker) || !EntityManager.Exists(marker))
                 {
-                    marker = EntityManager.CreateEntity(typeof(RuntimeTaskMarker), typeof(Transform));
+                    marker = EntityManager.CreateEntity();
+                    EntityManager.AddComponentData(marker, new RuntimeTaskMarker());
+                    EntityManager.AddComponentData(marker, new Transform(Unity.Mathematics.float3.zero, Unity.Mathematics.quaternion.identity));
                     _markers[entry.Id] = marker;
                 }
                 EntityManager.SetComponentData(marker, new RuntimeTaskMarker
