@@ -1,0 +1,24 @@
+name: Native Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy-smoke:
+    # This runner must be a Windows machine with Cities: Skylines II and its
+    # official code-modding toolchain installed. The proprietary game files
+    # cannot be installed on GitHub-hosted runners.
+    runs-on: [self-hosted, windows, cs2-modding]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: UI/package-lock.json
+      - run: npm ci
+        working-directory: UI
+      - run: dotnet build Planboard.sln -c Release --no-restore

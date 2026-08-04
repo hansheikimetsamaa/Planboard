@@ -111,6 +111,7 @@ export function CategoryPicker({ value, custom, labels, onChange, onCustom }: {
       >{label}</Button>)}
       <input
         type="text"
+        aria-label="Custom category"
         value={custom}
         maxLength={40}
         placeholder="Custom category"

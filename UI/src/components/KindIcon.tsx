@@ -8,5 +8,5 @@ export function kindIconSource(kind: EntryKind) {
 }
 
 export function KindIcon({ kind, className = "" }: { kind: EntryKind; className?: string }) {
-  return <img src={kindIconSource(kind)} className={className} draggable={false} />;
+  return <img src={kindIconSource(kind)} alt="" aria-hidden="true" className={className} draggable={false} />;
 }

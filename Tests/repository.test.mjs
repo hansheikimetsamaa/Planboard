@@ -16,6 +16,13 @@ test("local UI builds and game deployment have separate outputs", async () => {
   assert.match(project, /npm run deploy/);
 });
 
+test("native verification is available on a licensed self-hosted Windows runner", async () => {
+  const workflow = await read("../.github/workflows/native-verify.yml");
+  assert.match(workflow, /workflow_dispatch/);
+  assert.match(workflow, /self-hosted, windows, cs2-modding/);
+  assert.match(workflow, /dotnet build Planboard\.sln -c Release/);
+});
+
 test("strict UI cleanup checks remain enabled", async () => {
   const config = JSON.parse(await read("../UI/tsconfig.json"));
   assert.equal(config.compilerOptions.noUnusedLocals, true);
@@ -44,6 +51,7 @@ test("public release identity and metadata stay Planboard-only", async () => {
   assert.match(labels, /`Planboard\.UI\.\$\{key\}`/);
   assert.match(publish, /<GameVersion Value="1\.6\.\*" \/>/);
   assert.match(publish, /Planboard is a location-aware planning board/);
+  assert.match(publish, /0\.1\.1 - 2026-08-04/);
   assert.match(publish, /0\.1\.0 - Initial public release/);
   assert.doesNotMatch(publish, /See (LongDescription|Changelog)\.md/);
   assert.match(ignore, /^Inspiration\/$/m);

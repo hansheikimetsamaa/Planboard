@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Colossal.UI.Binding;
 using Colossal.Serialization.Entities;
+using Game.Objects;
 using Game.Rendering;
 using Game.Simulation;
 using Game.Tools;
@@ -33,6 +34,7 @@ namespace Planboard.UI
         private TaskEntry _deletedEntry;
         private long _deleteUndoExpiresUtcTicks;
         private PlacementState _lastPlacementState = PlacementState.Inactive;
+        private Entity _navigationAnchor = Entity.Null;
 
         public int SelectedEntryId { get; private set; }
         public int MapDisplayMode { get; private set; } = 1;
@@ -58,6 +60,7 @@ namespace Planboard.UI
             AddUpdateBinding(new GetterValueBinding<bool>(UIBindingConstants.Group, UIBindingConstants.UndoAvailable, IsUndoAvailable));
             AddUpdateBinding(new GetterValueBinding<int>(UIBindingConstants.Group, UIBindingConstants.WindowLayoutRevision, () => Mod.Settings.WindowLayoutRevision));
             AddUpdateBinding(new GetterValueBinding<string>(UIBindingConstants.Group, UIBindingConstants.DeadlineMode, () => Mod.Settings.DeadlineMode == Settings.InGameDeadlineMode ? Settings.InGameDeadlineMode : Settings.RealLifeDeadlineMode));
+            AddUpdateBinding(new GetterValueBinding<bool>(UIBindingConstants.Group, UIBindingConstants.DataReadOnly, () => _data.IsReadOnly));
             AddUpdateBinding(_entriesBinding = new RawValueBinding(UIBindingConstants.Group, UIBindingConstants.Entries, WriteEntries));
             AddUpdateBinding(_issuesBinding = new RawValueBinding(UIBindingConstants.Group, UIBindingConstants.DataIssues, WriteDataIssues));
             AddUpdateBinding(_projectedMarkersBinding = new RawValueBinding(UIBindingConstants.Group, UIBindingConstants.ProjectedMarkers, WriteProjectedMarkers));
@@ -80,6 +83,12 @@ namespace Planboard.UI
             AddBinding(new TriggerBinding<bool>(UIBindingConstants.Group, UIBindingConstants.SetPanelVisible, SetPanelVisible));
             AddBinding(new TriggerBinding(UIBindingConstants.Group, UIBindingConstants.CycleMapDisplayMode, CycleMapDisplayMode));
             AddBinding(new TriggerBinding(UIBindingConstants.Group, UIBindingConstants.UndoDelete, UndoDelete));
+        }
+
+        protected override void OnDestroy()
+        {
+            if (EntityManager.Exists(_navigationAnchor)) EntityManager.DestroyEntity(_navigationAnchor);
+            base.OnDestroy();
         }
 
         protected override void OnUpdate()
@@ -356,10 +365,20 @@ namespace Planboard.UI
         private void NavigateToEntry(int id)
         {
             SelectEntry(id);
-            if (!_markers.TryGetMarker(id, out Entity marker) || _camera.orbitCameraController == null) return;
-            _camera.orbitCameraController.followedEntity = marker;
+            TaskEntry entry = _data.Find(id);
+            if (entry == null || !entry.HasLocation || _camera.orbitCameraController == null) return;
+            Entity target = _markers.TryGetMarker(id, out Entity marker) ? marker : GetNavigationAnchor(entry.Position);
+            _camera.orbitCameraController.followedEntity = target;
             _camera.orbitCameraController.TryMatchPosition(_camera.activeCameraController);
             _camera.activeCameraController = _camera.orbitCameraController;
+        }
+
+        private Entity GetNavigationAnchor(Unity.Mathematics.float3 position)
+        {
+            if (!EntityManager.Exists(_navigationAnchor))
+                _navigationAnchor = EntityManager.CreateEntity(typeof(Transform));
+            EntityManager.SetComponentData(_navigationAnchor, new Transform(position, Unity.Mathematics.quaternion.identity));
+            return _navigationAnchor;
         }
 
         private void WriteEntries(IJsonWriter writer)
@@ -432,7 +451,14 @@ namespace Planboard.UI
         private void WriteDataIssues(IJsonWriter writer)
         {
             writer.ArrayBegin((uint)_data.DataIssues.Count);
-            foreach (string issue in _data.DataIssues) writer.Write(issue);
+            foreach (TaskDataIssue issue in _data.DataIssues)
+            {
+                writer.TypeBegin("Planboard.DataIssue");
+                Write(writer, "severity", (int)issue.Severity);
+                Write(writer, "entryId", issue.EntryId);
+                Write(writer, "message", issue.Message);
+                writer.TypeEnd();
+            }
             writer.ArrayEnd();
         }
 

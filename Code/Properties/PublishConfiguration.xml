@@ -20,10 +20,15 @@ Planboard has no runtime mod dependencies and supports Cities: Skylines II 1.6.x
   <Screenshot Value="" />
   <Tag Value="Code Mod" />
   <ForumLink Value="" />
-  <ModVersion Value="0.1.0" />
+  <ModVersion Value="0.1.1" />
   <GameVersion Value="1.6.*" />
   <RequiredDLC Value="" />
-  <ChangeLog>## 0.1.0 - Initial public release
+  <ChangeLog>## 0.1.1 - 2026-08-04
+
+- Fixed save-data protection, interrupted placement cleanup, and navigation to hidden completed markers.
+- Added visible data repair reports, compatibility notices, accessibility labels, and native build verification.
+
+## 0.1.0 - Initial public release
 
 - Added location-aware issues, notes, and ideas.
 - Added list, detail, quick-pin, and sticky-note workflows.

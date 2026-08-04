@@ -14,6 +14,7 @@ export const Binding = {
   undoAvailable: "undoAvailable",
   windowLayoutRevision: "windowLayoutRevision",
   deadlineMode: "deadlineMode",
+  dataReadOnly: "dataReadOnly",
   createEntry: "createEntry",
   createPinnedDraft: "createPinnedDraft",
   finishDraft: "finishDraft",
@@ -77,6 +78,12 @@ export interface EntryView {
   linkState: LinkState;
   hasDistrict: boolean;
   markerMoved: boolean;
+}
+
+export interface DataIssueView {
+  severity: 0 | 1;
+  entryId: number;
+  message: string;
 }
 
 export type MainTab = "all" | "open" | "done";

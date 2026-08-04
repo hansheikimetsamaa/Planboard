@@ -18,15 +18,17 @@ namespace Planboard.Systems
         public const int MaxEntries = 10000;
 
         private readonly List<TaskEntry> _entries = new();
-        private readonly List<string> _dataIssues = new();
+        private readonly List<TaskDataIssue> _dataIssues = new();
         private readonly HashSet<int> _transientEntryIds = new();
         private int _nextId = 1;
         private uint _revision;
         private bool _pendingValidation;
+        private int? _unsupportedFormatVersion;
 
         public IReadOnlyList<TaskEntry> Entries => _entries;
-        public IReadOnlyList<string> DataIssues => _dataIssues;
+        public IReadOnlyList<TaskDataIssue> DataIssues => _dataIssues;
         public uint Revision => _revision;
+        public bool IsReadOnly => _unsupportedFormatVersion.HasValue;
         internal bool PendingValidation => _pendingValidation;
 
         protected override void OnCreate()
@@ -40,14 +42,14 @@ namespace Planboard.Systems
         protected override void OnGameLoaded(Context serializationContext)
         {
             base.OnGameLoaded(serializationContext);
-            _pendingValidation = true;
+            if (!IsReadOnly) _pendingValidation = true;
         }
 
         public TaskEntry Find(int id) => _entries.FirstOrDefault(entry => entry.Id == id);
 
         public int CreateEntry(string title, EntryKind kind, EntryCategory category, string customCategory = "", bool transient = false)
         {
-            if (_entries.Count >= MaxEntries) return 0;
+            if (IsReadOnly || _entries.Count >= MaxEntries) return 0;
             long now = DateTime.UtcNow.Ticks;
             TaskEntry entry = new()
             {
@@ -67,7 +69,7 @@ namespace Planboard.Systems
 
         public bool CommitTransientEntry(int id)
         {
-            if (Find(id) == null) return false;
+            if (IsReadOnly || Find(id) == null) return false;
             return _transientEntryIds.Remove(id);
         }
 
@@ -85,6 +87,7 @@ namespace Planboard.Systems
             long realDueDateTicks,
             long gameDueDateTicks)
         {
+            if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null) return false;
             string nextTitle = CleanTitle(title);
@@ -117,7 +120,7 @@ namespace Planboard.Systems
 
         public bool RestoreEntry(TaskEntry snapshot)
         {
-            if (snapshot == null || Find(snapshot.Id) != null || _entries.Count >= MaxEntries) return false;
+            if (IsReadOnly || snapshot == null || Find(snapshot.Id) != null || _entries.Count >= MaxEntries) return false;
             _entries.Add(snapshot.Clone());
             if (_nextId <= snapshot.Id) _nextId = snapshot.Id + 1;
             Touch();
@@ -125,6 +128,7 @@ namespace Planboard.Systems
         }
         public bool DeleteEntry(int id)
         {
+            if (IsReadOnly) return false;
             int removed = _entries.RemoveAll(entry => entry.Id == id);
             if (removed == 0) return false;
             _transientEntryIds.Remove(id);
@@ -134,6 +138,7 @@ namespace Planboard.Systems
 
         public bool SetStatus(int id, EntryStatus status)
         {
+            if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null || !Enum.IsDefined(typeof(EntryStatus), status)) return false;
             if (entry.Status == status) return true;
@@ -145,6 +150,7 @@ namespace Planboard.Systems
 
         public bool ConvertIdeaToTask(int id)
         {
+            if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null || entry.Kind != EntryKind.Idea) return false;
             entry.Kind = EntryKind.Task;
@@ -155,6 +161,7 @@ namespace Planboard.Systems
 
         public bool SetLocation(int id, float3 position, Entity linkedEntity, Entity linkedDistrict, bool markerMoved)
         {
+            if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null || !math.all(math.isfinite(position))) return false;
             entry.SpatialKind = SpatialKind.Point;
@@ -170,6 +177,7 @@ namespace Planboard.Systems
 
         public bool RemoveLocation(int id)
         {
+            if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null) return false;
             if (!entry.HasLocation && entry.LinkedEntity == Entity.Null && entry.LinkedDistrict == Entity.Null) return true;
@@ -186,6 +194,11 @@ namespace Planboard.Systems
 
         internal void ValidateLoadedData(EntityManager entityManager)
         {
+            if (IsReadOnly)
+            {
+                _pendingValidation = false;
+                return;
+            }
             _dataIssues.Clear();
             HashSet<int> ids = new();
             int maxId = 0;
@@ -198,7 +211,7 @@ namespace Planboard.Systems
                     int oldId = entry.Id;
                     entry.Id = NextUnusedId(ids);
                     ids.Add(entry.Id);
-                    _dataIssues.Add($"Entry {oldId} had an invalid or duplicate ID and was reassigned to {entry.Id}.");
+                    AddIssue(DataIssueSeverity.Warning, entry.Id, $"Entry {oldId} had an invalid or duplicate ID and was reassigned to {entry.Id}.");
                 }
 
                 maxId = Math.Max(maxId, entry.Id);
@@ -217,13 +230,13 @@ namespace Planboard.Systems
                 if (entry.SpatialKind != SpatialKind.None && entry.SpatialKind != SpatialKind.Point)
                 {
                     entry.SpatialKind = SpatialKind.None;
-                    _dataIssues.Add($"Entry {entry.Id} used unsupported V1 geometry and was changed to list-only.");
+                    AddIssue(DataIssueSeverity.Warning, entry.Id, "Used unsupported V1 geometry and was changed to list-only.");
                 }
                 if (entry.HasLocation && !math.all(math.isfinite(entry.Position)))
                 {
                     entry.SpatialKind = SpatialKind.None;
                     entry.Position = default;
-                    _dataIssues.Add($"Entry {entry.Id} had invalid coordinates and was changed to list-only.");
+                    AddIssue(DataIssueSeverity.Warning, entry.Id, "Had invalid coordinates and was changed to list-only.");
                 }
 
                 bool linked = entry.LinkedEntity != Entity.Null || entry.LinkedDistrict != Entity.Null;
@@ -271,6 +284,11 @@ namespace Planboard.Systems
 
         private void Touch() { unchecked { _revision++; } }
 
+        private void AddIssue(DataIssueSeverity severity, int entryId, string message)
+        {
+            _dataIssues.Add(new TaskDataIssue { Severity = severity, EntryId = entryId, Message = message });
+        }
+
         public void SetDefaults(Context context)
         {
             _entries.Clear();
@@ -279,10 +297,16 @@ namespace Planboard.Systems
             _nextId = 1;
             _revision = 0;
             _pendingValidation = true;
+            _unsupportedFormatVersion = null;
         }
 
         public void Serialize<TWriter>(TWriter writer) where TWriter : IWriter
         {
+            if (IsReadOnly)
+                throw new InvalidOperationException(
+                    $"Planboard data format {_unsupportedFormatVersion} is newer or unsupported. " +
+                    "Refusing to save an empty replacement. Install a compatible Planboard version or disable Planboard before saving.");
+
             writer.Write(CurrentFormatVersion);
             writer.Write(_nextId);
             int persistentCount = _entries.Count(entry => !_transientEntryIds.Contains(entry.Id));
@@ -316,11 +340,14 @@ namespace Planboard.Systems
             _entries.Clear();
             _dataIssues.Clear();
             _transientEntryIds.Clear();
+            _unsupportedFormatVersion = null;
             reader.Read(out int version);
             if (version < 1 || version > CurrentFormatVersion)
             {
-                _dataIssues.Add($"Unsupported Planboard data version: {version}.");
-                _pendingValidation = true;
+                _unsupportedFormatVersion = version;
+                AddIssue(DataIssueSeverity.Error, 0, $"Planboard data version {version} is unsupported by this release. Editing and saving are blocked to protect the data.");
+                _pendingValidation = false;
+                Touch();
                 return;
             }
 
@@ -328,7 +355,7 @@ namespace Planboard.Systems
             reader.Read(out int serializedCount);
             if (serializedCount < 0) serializedCount = 0;
             if (serializedCount > MaxEntries)
-                _dataIssues.Add($"Planboard contained {serializedCount} entries; only the first {MaxEntries} were restored.");
+                AddIssue(DataIssueSeverity.Error, 0, $"Planboard contained {serializedCount} entries; only the first {MaxEntries} were restored.");
             for (int i = 0; i < serializedCount; i++)
             {
                 TaskEntry entry = new();

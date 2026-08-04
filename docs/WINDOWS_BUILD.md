@@ -47,6 +47,10 @@ The official `Mod.targets` post-processes and deploys the native assembly. The `
 8. Test marker visibility modes, selected-row sticky display, deletion, and Undo.
 9. Save and reload, then remove a linked city object and verify fallback coordinates and missing-link reporting.
 
+## Native CI runner
+
+`Native Verify` is a manual GitHub Actions workflow for a self-hosted Windows runner labelled `cs2-modding`. It runs the same native Release build that deploys the mod UI. Configure `CSII_TOOLPATH` and `CSII_USERDATAPATH` as user environment variables for the runner service, install the official Cities: Skylines II code-modding toolchain, and use a disposable local city-save directory. GitHub-hosted runners cannot run this workflow because the official toolchain depends on locally installed game files.
+
 ## Packaging
 
 1. Update versions, changelog, description, thumbnail, and screenshots.

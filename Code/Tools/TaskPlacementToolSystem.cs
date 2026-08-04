@@ -72,9 +72,19 @@ namespace Planboard.Tools
             base.OnStopRunning();
             SetActionEnabled(_applyAction, false);
             SetActionEnabled(_cancelAction, false);
+            bool interruptedPlacement = EntryId > 0 && State != PlacementState.Applied && State != PlacementState.Cancelled;
             PreviewEntity = Entity.Null;
             PreviewPosition = default;
-            if (State != PlacementState.Applied && State != PlacementState.Cancelled) State = PlacementState.Inactive;
+            if (interruptedPlacement)
+            {
+                Mod.Log.Warn($"Placement for task {EntryId} was cancelled because another tool became active.");
+                State = PlacementState.Cancelled;
+                EntryId = 0;
+            }
+            else if (State != PlacementState.Applied && State != PlacementState.Cancelled)
+            {
+                State = PlacementState.Inactive;
+            }
         }
 
         private static void SetActionEnabled(ProxyAction action, bool enabled)

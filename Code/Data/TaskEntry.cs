@@ -3,6 +3,15 @@ using Unity.Mathematics;
 
 namespace Planboard.Data
 {
+    public enum DataIssueSeverity : byte { Warning, Error }
+
+    public sealed class TaskDataIssue
+    {
+        public DataIssueSeverity Severity;
+        public int EntryId;
+        public string Message = string.Empty;
+    }
+
     public sealed class TaskEntry
     {
         public int Id;

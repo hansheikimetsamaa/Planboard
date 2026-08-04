@@ -26,7 +26,7 @@ namespace Planboard
 
         public void OnLoad(UpdateSystem updateSystem)
         {
-            Log.Info("Loading Planboard 0.1.0");
+            Log.Info("Loading Planboard 0.1.1");
 
             Settings = new Settings(this);
             Settings.RegisterKeyBindings();

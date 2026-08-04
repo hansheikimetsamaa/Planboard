@@ -7,5 +7,5 @@ export function statusIconSource(status: EntryStatus) {
   return status === EntryStatus.Doing ? doingIcon : status === EntryStatus.Done ? doneIcon : openIcon;
 }
 export function StatusIcon({ status, className = "" }: { status: EntryStatus; className?: string }) {
-  return <img src={statusIconSource(status)} className={className} draggable={false} />;
+  return <img src={statusIconSource(status)} alt="" aria-hidden="true" className={className} draggable={false} />;
 }

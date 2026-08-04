@@ -1,17 +1,17 @@
-import { Component, ReactNode, useEffect, useRef, useState } from "react";
+import { Component, ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { ErrorInfo } from "react";
 import { trigger, useValue } from "cs2/api";
 import { Button, Panel } from "cs2/ui";
-import { dataIssues$, deadlineMode$, entries$, panelVisible$, placementEntryId$, placementState$, selectedEntryId$, undoAvailable$, windowLayoutRevision$ } from "../bindings";
+import { dataIssues$, dataReadOnly$, deadlineMode$, entries$, panelVisible$, placementEntryId$, placementState$, selectedEntryId$, undoAvailable$, windowLayoutRevision$ } from "../bindings";
 import { usePlanboardLocale } from "../labels";
 import { dateInputToTicks, filterAndSort, isValidDateInput, ticksToDateInput } from "../model";
-import { Binding, DeadlineMode, EntryCategory, EntryKind, EntryPriority, EntryStatus, EntryView, Filters, LinkState, PlacementState } from "../types/contracts";
+import { Binding, DataIssueView, DeadlineMode, EntryCategory, EntryKind, EntryPriority, EntryStatus, EntryView, Filters, LinkState, PlacementState } from "../types/contracts";
 import { KindIcon } from "./KindIcon";
 import { StatusIcon } from "./StatusIcon";
 import { usePanelGeometry } from "./usePanelGeometry";
 import { CategoryPicker, Choice, KindPicker, Segmented, StatusPicker, Toggle } from "./EntryControls";
 import styles from "./mainPanel.module.scss";
-const emptyEntries: EntryView[] = [], emptyIssues: string[] = [];
+const emptyEntries: EntryView[] = [], emptyIssues: DataIssueView[] = [];
 const baseFilters: Filters = { query: "", tab: "all", kind: -1, category: -1, status: -1, priority: -1, location: "all", missingLinksOnly: false, overdueOnly: false, unfinishedOnly: false, sort: "updated" };
 const listPageSize = 200;
 type EditorPayload = (string | number)[];
@@ -39,9 +39,9 @@ class Boundary extends Component<{
     render() { return this.state.failed ? <div className={styles.error}><strong>Planboard could not open.</strong><Button variant="flat" onSelect={() => trigger(Binding.group, Binding.setPanelVisible, false)}>Close</Button></div> : this.props.children; }
 }
 function PanelContent() {
-    const entries = useValue(entries$) ?? emptyEntries, issues = useValue(dataIssues$) ?? emptyIssues, selectedId = useValue(selectedEntryId$) ?? 0, placementState = useValue(placementState$) ?? 0, placementEntryId = useValue(placementEntryId$) ?? 0, undoAvailable = useValue(undoAvailable$) ?? false, layoutRevision = useValue(windowLayoutRevision$) ?? 0;
+    const entries = useValue(entries$) ?? emptyEntries, issues = useValue(dataIssues$) ?? emptyIssues, readOnly = useValue(dataReadOnly$) ?? false, selectedId = useValue(selectedEntryId$) ?? 0, placementState = useValue(placementState$) ?? 0, placementEntryId = useValue(placementEntryId$) ?? 0, undoAvailable = useValue(undoAvailable$) ?? false, layoutRevision = useValue(windowLayoutRevision$) ?? 0;
     const deadlineMode = useValue(deadlineMode$) ?? "real";
-    const [filters, setFilters] = useState(initialFilters), [creating, setCreating] = useState(false), [showFilters, setShowFilters] = useState(false), [detailId, setDetailId] = useState<number | null>(null), [categoryChip, setCategoryChip] = useState<string | null>(null), [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null), [highlightedId, setHighlightedId] = useState<number | null>(null), [deletedId, setDeletedId] = useState<number | null>(null), [createdId, setCreatedId] = useState<number | null>(null), [visibleCount, setVisibleCount] = useState(listPageSize);
+    const [filters, setFilters] = useState(initialFilters), [creating, setCreating] = useState(false), [showFilters, setShowFilters] = useState(false), [showIssues, setShowIssues] = useState(false), [detailId, setDetailId] = useState<number | null>(null), [categoryChip, setCategoryChip] = useState<string | null>(null), [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null), [highlightedId, setHighlightedId] = useState<number | null>(null), [deletedId, setDeletedId] = useState<number | null>(null), [createdId, setCreatedId] = useState<number | null>(null), [visibleCount, setVisibleCount] = useState(listPageSize);
     const pendingCreate = useRef(false);
     const { t, kindLabels, categoryLabels, statusLabels } = usePlanboardLocale();
     const geometry = usePanelGeometry("main", 520, 420, .9, .85);
@@ -50,13 +50,15 @@ function PanelContent() {
         geometry.reset();
     else
         layoutMounted.current = true; }, [layoutRevision]);
+    const deferredQuery = useDeferredValue(filters.query);
+    const effectiveFilters = useMemo(() => ({ ...filters, query: deferredQuery }), [filters, deferredQuery]);
     const categoryFor = (entry: EntryView) => entry.categoryName || categoryLabels[entry.category] || categoryLabels[EntryCategory.General];
-    const categoryNames = Array.from(new Set(entries.map(categoryFor)));
-    const baseFiltered = filterAndSort(entries, filters, deadlineMode);
-    const filtered = categoryChip ? baseFiltered.filter(entry => categoryFor(entry) === categoryChip) : baseFiltered;
+    const categoryNames = useMemo(() => Array.from(new Set(entries.map(categoryFor))), [entries]);
+    const baseFiltered = useMemo(() => filterAndSort(entries, effectiveFilters, deadlineMode), [entries, effectiveFilters, deadlineMode]);
+    const filtered = useMemo(() => categoryChip ? baseFiltered.filter(entry => categoryFor(entry) === categoryChip) : baseFiltered, [baseFiltered, categoryChip]);
     const visibleEntries = filtered.slice(0, visibleCount);
     const selected = entries.find(entry => entry.id === detailId);
-    const counts = { all: entries.length, open: entries.filter(x => x.status !== EntryStatus.Done).length, done: entries.filter(x => x.status === EntryStatus.Done).length };
+    const counts = useMemo(() => ({ all: entries.length, open: entries.filter(x => x.status !== EntryStatus.Done).length, done: entries.filter(x => x.status === EntryStatus.Done).length }), [entries]);
     useEffect(() => {
         try {
             localStorage.setItem("planboard.listPreferences", JSON.stringify({ tab: filters.tab, sort: filters.sort }));
@@ -103,6 +105,7 @@ function PanelContent() {
     const hiddenCreated = createdId !== null && !filtered.some(x => x.id === createdId);
     return <Panel key={geometry.panelKey} draggable initialPosition={geometry.initialPosition}
 style={geometry.panelStyle} onMouseUp={geometry.onPanelMouseUp} className={styles.panelShell} contentClassName={styles.panelContent} header={<div className={styles.title}><strong>{t("Title", "Planboard")}</strong><span>{t("Subtitle", "City Tasks & Map Notes & ToDo")} | {entries.length} items</span></div>} showCloseHint onClose={() => trigger(Binding.group, Binding.setPanelVisible, false)}><div className={styles.panel}>
+  {readOnly ? <ReadOnlyNotice issues={issues}/> : <>
   {placementState >= PlacementState.ChoosingLocation && placementState <= PlacementState.InvalidPreview && <div className={styles.banner}><span>Pinning #{placementEntryId} - click the map</span><Button variant="flat" onSelect={() => trigger(Binding.group, Binding.cancelPlacement)}>Cancel</Button></div>}
   {pendingDelete !== null && <div className={styles.deleteConfirm}><span>Delete this entry?</span><div className={styles.deleteConfirmActions}><Button variant="flat" onSelect={() => setPendingDelete(null)}>Cancel</Button><Button variant="flat" onSelect={confirmDelete}>Delete</Button></div></div>}
   {!selected && !creating && <><div className={styles.listHeader}><div><strong>Map tasks</strong><span>Notes, issues and ideas tied to your city</span></div><input className={styles.searchInput} value={filters.query} aria-label={t("SearchPlaceholder", "Search tasks and notes")} placeholder={t("SearchPlaceholder", "Search tasks and notes")} onChange={event => setFilters({ ...filters, query: event.target.value })}/><Button variant="flat" className={styles.plusButton} title="Create a new item" onSelect={() => setCreating(true)}>+</Button></div>
@@ -112,8 +115,17 @@ style={geometry.panelStyle} onMouseUp={geometry.onPanelMouseUp} className={style
   <div className={styles.footer}><Toggle label="Unfinished only" value={filters.unfinishedOnly} onChange={unfinishedOnly => setFilters({ ...filters, unfinishedOnly })}/><Button variant="flat" onSelect={geometry.reset}>Reset window</Button></div></>}
   {creating && <div className={styles.detailView}><NewEditor deadlineMode={deadlineMode} onCancel={() => setCreating(false)} onCreate={create}/></div>}
   {selected && <div className={styles.detailView}><Editor key={selected.id} entry={selected} deadlineMode={deadlineMode} onBack={() => setDetailId(null)} onDelete={payload => requestDelete(selected.id, payload)}/></div>}
-  {undoAvailable && <div className={styles.undoToast}><span>Entry deleted</span><Button variant="flat" onSelect={undo}>Undo</Button></div>} {issues.length > 0 && <div className={styles.issues}>Data issues ({issues.length})</div>}<div className={styles.resizeHandle} onMouseDown={geometry.startResize}></div>
+  {undoAvailable && <div className={styles.undoToast}><span>Entry deleted</span><Button variant="flat" onSelect={undo}>Undo</Button></div>}
+  {issues.length > 0 && <div className={styles.issues}><Button variant="flat" onSelect={() => setShowIssues(!showIssues)}>Data issues ({issues.length}) {showIssues ? "-" : "+"}</Button>{showIssues && <DataIssuesPanel issues={issues}/>}</div>}
+  <div className={styles.resizeHandle} onMouseDown={geometry.startResize}></div>
+  </>}
  </div></Panel>;
+}
+function ReadOnlyNotice({ issues }: { issues: DataIssueView[] }) {
+    return <div className={styles.readOnlyNotice} role="alert"><strong>Planboard data needs a newer compatible version</strong><p>Editing is disabled and Planboard will block saving this city to prevent replacing its data.</p><p>Quit without saving, install the Planboard version that created this city, and load it again. If you must save first, make a backup and verify the game preserves disabled-mod data before disabling Planboard.</p><DataIssuesPanel issues={issues}/></div>;
+}
+function DataIssuesPanel({ issues }: { issues: DataIssueView[] }) {
+    return <div className={styles.dataIssuesPanel}>{issues.map((issue, index) => <div key={`${issue.entryId}-${index}`} className={issue.severity === 1 ? styles.dataIssueError : styles.dataIssueWarning}><strong>{issue.severity === 1 ? "Error" : "Warning"}{issue.entryId > 0 ? ` · Entry #${issue.entryId}` : ""}</strong><span>{issue.message}</span>{issue.severity === 1 && <small>Restore a backup or use a compatible Planboard version before saving.</small>}</div>)}</div>;
 }
 function FilterPanel({ filters: f, deadlineMode, onChange }: {
     filters: Filters;
@@ -160,7 +172,7 @@ function NewEditor({ deadlineMode, onCancel, onCreate }: {
             submit(true);
         }
     }}><div className={styles.detailTopbar}><Button variant="flat" onSelect={onCancel}>&lt; Planboard</Button><span className={styles.newLabel}>New item</span></div><div className={styles.editor}>
-      <input autoFocus className={styles.titleInput} value={title} maxLength={160} placeholder="What needs attention?" onChange={event => { setTitle(event.target.value); setError(null); }} onKeyDown={event => {
+      <input autoFocus aria-label="Title" className={styles.titleInput} value={title} maxLength={160} placeholder="What needs attention?" onChange={event => { setTitle(event.target.value); setError(null); }} onKeyDown={event => {
         if (event.key === "Enter") {
             event.preventDefault();
             event.stopPropagation();
@@ -170,8 +182,8 @@ function NewEditor({ deadlineMode, onCancel, onCreate }: {
       {error && <div className={styles.createError}>{error}</div>}
       <div className={styles.locationCard}><div className={styles.locationInfo}><span className={styles.pinGlyph}>P</span><span className={styles.locationText}><strong>Not yet placed on the map</strong><span>Create and immediately choose its location</span></span></div><div className={styles.locationActions}><Button variant="flat" title="Create and place on map (Ctrl+Enter)" onSelect={() => submit(true)}>Create &amp; place</Button></div></div>
       <div className={styles.grid}><KindPicker value={kind} labels={k} onChange={setKind}/><CategoryPicker value={category} custom={categoryName} labels={c} onChange={setCategory} onCustom={setCategoryName}/><StatusPicker value={status} labels={s} onChange={setStatus}/><Segmented label="Priority" value={priority} onChange={value => setPriority(value as EntryPriority)} options={p.map((label, value) => ({ label, value }))}/></div>
-      <div className={styles.field}><span>Description</span><textarea className={styles.descriptionInput} value={description} maxLength={4000} onChange={event => setDescription(event.target.value)}/></div>
-      <div className={styles.moreOptions}><Button variant="flat" onSelect={() => setMore(!more)}>{more ? "-" : "+"} More options</Button>{more && <div className={styles.moreBody}><div className={styles.grid}>{deadlineMode === "game" ? <div className={styles.field}><span>In-game deadline</span><input value={game} placeholder="YYYY-MM-DD" onChange={event => setGame(event.target.value)}/></div> : <div className={styles.field}><span>Real-life deadline</span><input value={real} placeholder="YYYY-MM-DD" onChange={event => setReal(event.target.value)}/></div>}</div></div>}</div>
+      <div className={styles.field}><span>Description</span><textarea aria-label="Description" className={styles.descriptionInput} value={description} maxLength={4000} onChange={event => setDescription(event.target.value)}/></div>
+      <div className={styles.moreOptions}><Button variant="flat" onSelect={() => setMore(!more)}>{more ? "-" : "+"} More options</Button>{more && <div className={styles.moreBody}><div className={styles.grid}>{deadlineMode === "game" ? <div className={styles.field}><span>In-game deadline</span><input aria-label="In-game deadline" value={game} placeholder="YYYY-MM-DD" onChange={event => setGame(event.target.value)}/></div> : <div className={styles.field}><span>Real-life deadline</span><input aria-label="Real-life deadline" value={real} placeholder="YYYY-MM-DD" onChange={event => setReal(event.target.value)}/></div>}</div></div>}</div>
     </div><div className={styles.createActions}><Button variant="flat" onSelect={onCancel}>Cancel</Button><Button variant="primary" title="Create item (Enter)" onSelect={() => submit(false)}>Create item</Button></div></div>;
 }
 function Editor({ entry, deadlineMode, onBack, onDelete }: {
@@ -199,4 +211,4 @@ function Editor({ entry, deadlineMode, onBack, onDelete }: {
         return () => window.clearTimeout(timer);
     }, [title, description, kind, category, categoryName, status, priority, real, game]);
     useEffect(() => () => persist(latestPayload.current), []);
-    const locationContext = entry.hasDistrict ? "Pinned in a district" : entry.linkState === LinkState.Valid ? "Pinned to a city object" : "Pinned to map"; return <div className={styles.editorShell}><div className={styles.detailTopbar}><Button variant="flat" onSelect={onBack}>&lt; Planboard</Button><Button variant="flat" className={styles.deleteButton} onSelect={() => onDelete(latestPayload.current)}>Delete</Button></div><div className={styles.editor}><input className={styles.titleInput} value={title} maxLength={160} onChange={e => setTitle(e.target.value)}/><div className={styles.locationCard}><div className={styles.locationInfo}><span className={styles.pinGlyph}>P</span><span className={styles.locationText}><strong>{entry.hasLocation ? locationContext : "Not yet placed on the map"}</strong><span>{entry.hasLocation ? `Map coordinates ${Math.round(entry.x)}, ${Math.round(entry.z)}` : "Add a pin to give this entry spatial context"}</span></span></div><div className={styles.locationActions}>{entry.hasLocation && <Button variant="flat" onSelect={() => trigger(Binding.group, Binding.navigateToEntry, entry.id)}>View</Button>}<Button variant="flat" onSelect={() => trigger(Binding.group, Binding.beginPlacement, entry.id)}>{entry.hasLocation ? "Move" : "Place on map"}</Button></div></div><div className={styles.grid}><KindPicker value={kind} labels={k} onChange={setKind}/><CategoryPicker value={category} custom={categoryName} labels={c} onChange={setCategory} onCustom={setCategoryName}/><StatusPicker value={status} labels={s} onChange={setStatus}/><Segmented label="Priority" value={priority} onChange={v => setPriority(v as EntryPriority)} options={p.map((label, value) => ({ label, value }))}/></div><div className={styles.field}><span>Description</span><textarea className={styles.descriptionInput} value={description} maxLength={4000} onChange={e => setDescription(e.target.value)}/></div><div className={styles.moreOptions}><Button variant="flat" onSelect={() => setMore(!more)}>{more ? "-" : "+"} More options</Button>{more && <div className={styles.moreBody}><div className={styles.grid}>{deadlineMode === "game" ? <div className={styles.field}><span>In-game deadline</span><input value={game} placeholder="YYYY-MM-DD" onChange={e => setGame(e.target.value)}/></div> : <div className={styles.field}><span>Real-life deadline</span><input value={real} placeholder="YYYY-MM-DD" onChange={e => setReal(e.target.value)}/></div>}</div>{entry.hasLocation && <Button variant="flat" className={styles.removePin} onSelect={() => trigger(Binding.group, Binding.removeLocation, entry.id)}>Remove map pin</Button>}</div>}</div></div><div className={styles.autosave}><span></span>Changes save automatically</div></div>; }
+    const locationContext = entry.hasDistrict ? "Pinned in a district" : entry.linkState === LinkState.Valid ? "Pinned to a city object" : "Pinned to map"; return <div className={styles.editorShell}><div className={styles.detailTopbar}><Button variant="flat" onSelect={onBack}>&lt; Planboard</Button><Button variant="flat" className={styles.deleteButton} onSelect={() => onDelete(latestPayload.current)}>Delete</Button></div><div className={styles.editor}><input aria-label="Title" className={styles.titleInput} value={title} maxLength={160} onChange={e => setTitle(e.target.value)}/><div className={styles.locationCard}><div className={styles.locationInfo}><span className={styles.pinGlyph}>P</span><span className={styles.locationText}><strong>{entry.hasLocation ? locationContext : "Not yet placed on the map"}</strong><span>{entry.hasLocation ? `Map coordinates ${Math.round(entry.x)}, ${Math.round(entry.z)}` : "Add a pin to give this entry spatial context"}</span></span></div><div className={styles.locationActions}>{entry.hasLocation && <Button variant="flat" onSelect={() => trigger(Binding.group, Binding.navigateToEntry, entry.id)}>View</Button>}<Button variant="flat" onSelect={() => trigger(Binding.group, Binding.beginPlacement, entry.id)}>{entry.hasLocation ? "Move" : "Place on map"}</Button></div></div><div className={styles.grid}><KindPicker value={kind} labels={k} onChange={setKind}/><CategoryPicker value={category} custom={categoryName} labels={c} onChange={setCategory} onCustom={setCategoryName}/><StatusPicker value={status} labels={s} onChange={setStatus}/><Segmented label="Priority" value={priority} onChange={v => setPriority(v as EntryPriority)} options={p.map((label, value) => ({ label, value }))}/></div><div className={styles.field}><span>Description</span><textarea aria-label="Description" className={styles.descriptionInput} value={description} maxLength={4000} onChange={e => setDescription(e.target.value)}/></div><div className={styles.moreOptions}><Button variant="flat" onSelect={() => setMore(!more)}>{more ? "-" : "+"} More options</Button>{more && <div className={styles.moreBody}><div className={styles.grid}>{deadlineMode === "game" ? <div className={styles.field}><span>In-game deadline</span><input aria-label="In-game deadline" value={game} placeholder="YYYY-MM-DD" onChange={e => setGame(e.target.value)}/></div> : <div className={styles.field}><span>Real-life deadline</span><input aria-label="Real-life deadline" value={real} placeholder="YYYY-MM-DD" onChange={e => setReal(e.target.value)}/></div>}</div>{entry.hasLocation && <Button variant="flat" className={styles.removePin} onSelect={() => trigger(Binding.group, Binding.removeLocation, entry.id)}>Remove map pin</Button>}</div>}</div></div><div className={styles.autosave}><span></span>Changes save automatically</div></div>; }

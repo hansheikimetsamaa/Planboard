@@ -13,6 +13,27 @@ test("unfinished placement drafts are transient and excluded from saves", async 
   assert.match(ui, /CommitTransientEntry\(_createPlacementEntryId\)/);
 });
 
+test("switching tools cancels an unfinished placement without replacing the newly active tool", async () => {
+  const tool = await read("../Code/Tools/TaskPlacementToolSystem.cs");
+  const stopHandler = tool.match(/protected override void OnStopRunning\(\)[\s\S]*?\n        }\n\n        private static void SetActionEnabled/);
+  assert.ok(stopHandler, "OnStopRunning handler was not found");
+  assert.match(stopHandler[0], /bool interruptedPlacement = EntryId > 0/);
+  assert.match(stopHandler[0], /State = PlacementState\.Cancelled;[\s\S]*EntryId = 0;/);
+  assert.doesNotMatch(stopHandler[0], /m_ToolSystem\.activeTool/);
+});
+
+test("unsupported save formats fail closed instead of serializing empty Planboard data", async () => {
+  const data = await read("../Code/Systems/TaskDataSystem.cs");
+  const ui = await read("../Code/UI/TaskUISystem.cs");
+  const panel = await read("../UI/src/components/MainPanel.tsx");
+  assert.match(data, /public bool IsReadOnly => _unsupportedFormatVersion\.HasValue/);
+  assert.match(data, /Refusing to save an empty replacement/);
+  assert.match(data, /_pendingValidation = false;[\s\S]*Touch\(\);[\s\S]*return;/);
+  assert.match(data, /if \(!IsReadOnly\) _pendingValidation = true;/);
+  assert.match(ui, /UIBindingConstants\.DataReadOnly/);
+  assert.match(panel, /readOnly \? <ReadOnlyNotice issues=\{issues\}/);
+});
+
 test("sticky save commits one complete backend transaction", async () => {
   const draft = await read("../UI/src/components/DraftNotePanel.tsx");
   const ui = await read("../Code/UI/TaskUISystem.cs");
@@ -33,6 +54,35 @@ test("marker synchronization preserves surviving marker entities", async () => {
   assert.match(markers, /_markers\.TryGetValue\(entry\.Id/);
   assert.doesNotMatch(markers, /DestroyEntity\(_runtimeMarkerQuery\)/);
   assert.match(markers, /if \(desired\.Contains\(entryId\)\) continue/);
+});
+
+test("navigation falls back to an invisible coordinate anchor when a marker is hidden", async () => {
+  const ui = await read("../Code/UI/TaskUISystem.cs");
+  assert.match(ui, /_markers\.TryGetMarker\(id, out Entity marker\) \? marker : GetNavigationAnchor\(entry\.Position\)/);
+  assert.match(ui, /EntityManager\.CreateEntity\(typeof\(Transform\)\)/);
+  assert.match(ui, /if \(EntityManager\.Exists\(_navigationAnchor\)\) EntityManager\.DestroyEntity\(_navigationAnchor\)/);
+});
+
+test("data repair reports preserve severity, affected entry, and recovery guidance", async () => {
+  const data = await read("../Code/Systems/TaskDataSystem.cs");
+  const ui = await read("../Code/UI/TaskUISystem.cs");
+  const panel = await read("../UI/src/components/MainPanel.tsx");
+  assert.match(data, /List<TaskDataIssue>/);
+  assert.match(data, /AddIssue\(DataIssueSeverity\.Warning, entry\.Id/);
+  assert.match(ui, /writer\.TypeBegin\("Planboard\.DataIssue"\)/);
+  assert.match(panel, /DataIssuesPanel issues=\{issues\}/);
+  assert.match(panel, /Restore a backup or use a compatible Planboard version before saving/);
+});
+
+test("informational icons and free-form inputs have accessible names", async () => {
+  const kind = await read("../UI/src/components/KindIcon.tsx");
+  const status = await read("../UI/src/components/StatusIcon.tsx");
+  const panel = await read("../UI/src/components/MainPanel.tsx");
+  assert.match(kind, /alt="" aria-hidden="true"/);
+  assert.match(status, /alt="" aria-hidden="true"/);
+  assert.match(panel, /aria-label="Title"/);
+  assert.match(panel, /aria-label="Description"/);
+  assert.match(panel, /aria-label="Real-life deadline"/);
 });
 
 test("delete and city load clear active transient state", async () => {
@@ -77,12 +127,17 @@ test("large task lists render in bounded pages", async () => {
   const panel = await read("../UI/src/components/MainPanel.tsx");
   assert.match(panel, /const listPageSize = 200/);
   assert.match(panel, /filtered\.slice\(0, visibleCount\)/);
+  assert.match(panel, /useDeferredValue\(filters\.query\)/);
+  assert.match(panel, /useMemo\(\(\) => filterAndSort/);
 });
 
 test("core UI registration survives a missing native toolbar hook", async () => {
   const index = await read("../UI/src/index.tsx");
+  const notice = await read("../UI/src/components/CompatibilityNotice.tsx");
   assert.ok(index.indexOf('moduleRegistry.append("Game", MainPanel)') < index.indexOf('moduleRegistry.extend('));
   assert.match(index, /native toolbar hook is unavailable/);
+  assert.match(index, /reportCompatibilityIssue/);
+  assert.match(notice, /Open Planboard/);
 });
 test("search and double-click rename have reachable UI paths", async () => {
   const panel = await read("../UI/src/components/MainPanel.tsx");

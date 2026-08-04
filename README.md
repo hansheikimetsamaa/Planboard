@@ -16,6 +16,15 @@ Planboard is a location-aware planning mod for Cities: Skylines II. It keeps iss
 - Versioned save data with repair and missing-link reporting
 - Remembered, resizable window layouts
 
+## Changelog
+
+### 0.1.1 - 2026-08-04
+
+- Fixed data-loss risks for unsupported save formats and interrupted map placement.
+- Fixed navigation to completed or otherwise hidden map pins.
+- Made data repairs, compatibility failures, and recovery guidance visible in-game.
+- Improved large-list responsiveness, accessibility labels, and native build verification.
+
 ## Repository layout
 
 - `Code/` — C# mod, ECS systems, placement tool, serialization, rendering, settings, and UI bindings
