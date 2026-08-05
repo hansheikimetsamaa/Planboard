@@ -18,6 +18,11 @@ Planboard is a location-aware planning mod for Cities: Skylines II. It keeps iss
 
 ## Changelog
 
+### 0.1.2 - 2026-08-05
+
+- Changed default shortcuts to `Ctrl+Alt+P` and `Ctrl+Alt+Shift+P` to avoid common mod conflicts.
+- Fixed CS2 toolchain compatibility when creating runtime marker and navigation entities.
+
 ### 0.1.1 - 2026-08-04
 
 - Fixed data-loss risks for unsupported save formats and interrupted map placement.
