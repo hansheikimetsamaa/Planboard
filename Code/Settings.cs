@@ -25,10 +25,10 @@ namespace Planboard
 
         public Settings(IMod mod) : base(mod) { }
 
-        [SettingsUIKeyboardBinding(BindingKeyboard.P, TogglePanelAction, ctrl: true)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.P, TogglePanelAction, ctrl: true, alt: true)]
         public ProxyBinding TogglePanel { get; set; }
 
-        [SettingsUIKeyboardBinding(BindingKeyboard.P, PlaceMarkerAction, ctrl: true, shift: true)]
+        [SettingsUIKeyboardBinding(BindingKeyboard.P, PlaceMarkerAction, ctrl: true, alt: true, shift: true)]
         public ProxyBinding PlaceMarker { get; set; }
 
         [SettingsUIMouseBinding(BindingMouse.Left, ApplyPlacementAction, ctrl: false)]
@@ -117,7 +117,7 @@ namespace Planboard
                 { "Planboard.UI.DeleteConfirm", "Delete this entry?" },
                 { "Planboard.UI.PlacementHint", "Click to place the marker. Right-click or Escape to cancel." },
                 { "Planboard.UI.Entries", "entries" },
-                { "Planboard.UI.ToggleTooltip", "Planboard (Ctrl+P)" },
+                { "Planboard.UI.ToggleTooltip", "Planboard (Ctrl+Alt+P)" },
                 { "Planboard.UI.DistrictDescription", "Planning notes and work for this district" },
                 { "Planboard.UI.PlacingMarker", "Placing marker for" },
                 { "Planboard.UI.ClickToApply", "Click the map to apply." },

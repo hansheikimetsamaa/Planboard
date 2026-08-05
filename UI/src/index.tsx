@@ -26,7 +26,7 @@ const register: ModRegistrar = (moduleRegistry) => {
     );
   } catch (error) {
     console.warn("Planboard: native toolbar hook is unavailable; keyboard access remains active", error);
-    reportCompatibilityIssue("The toolbar button is unavailable after a game UI change. Use Open Planboard here or Ctrl+P.");
+    reportCompatibilityIssue("The toolbar button is unavailable after a game UI change. Use Open Planboard here or Ctrl+Alt+P.");
   }
 
   try {

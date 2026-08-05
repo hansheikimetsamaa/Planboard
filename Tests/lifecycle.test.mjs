@@ -59,7 +59,8 @@ test("marker synchronization preserves surviving marker entities", async () => {
 test("navigation falls back to an invisible coordinate anchor when a marker is hidden", async () => {
   const ui = await read("../Code/UI/TaskUISystem.cs");
   assert.match(ui, /_markers\.TryGetMarker\(id, out Entity marker\) \? marker : GetNavigationAnchor\(entry\.Position\)/);
-  assert.match(ui, /EntityManager\.CreateEntity\(typeof\(Transform\)\)/);
+  assert.match(ui, /_navigationAnchor = EntityManager\.CreateEntity\(\);/);
+  assert.match(ui, /EntityManager\.AddComponentData\(_navigationAnchor, new Transform\(position, Unity\.Mathematics\.quaternion\.identity\)\)/);
   assert.match(ui, /if \(EntityManager\.Exists\(_navigationAnchor\)\) EntityManager\.DestroyEntity\(_navigationAnchor\)/);
 });
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-08-05
+
+- Changed Planboard defaults to Ctrl+Alt+P and Ctrl+Alt+Shift+P to avoid common mod shortcut conflicts.
+- Fixed CS2 toolchain compatibility when creating runtime marker and navigation entities.
+- Updated the navigation regression check for the compatible entity-creation path.
+
 ## 0.1.1 - 2026-08-04
 
 - Fixed unsupported save versions to fail closed rather than serialize an empty replacement.
