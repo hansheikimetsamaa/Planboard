@@ -76,9 +76,9 @@ style={showDetails ? geometry.panelStyle : { ...geometry.panelStyle, height: "au
       <div className={styles.categoryLabel}>Category</div>
       <div className={styles.categoryChips}>{quickCategories.map(option => <Button key={option.label} variant="flat" selected={!showCustom && category === option.value} className={!showCustom && category === option.value ? styles.chipActive : ""} onSelect={() => selectCategory(option.value)}>{option.label}</Button>)}<Button variant="flat" selected={showCustom} className={showCustom ? styles.chipActive : ""} onSelect={() => setShowCustom(!showCustom)}>Custom...</Button></div>
       {showCustom && <input type="text" aria-label="Custom category" className={styles.customCategory} value={customCategory} maxLength={40} autoFocus placeholder="Custom category name" onChange={event => { setCustomCategory(event.target.value); setCategory(EntryCategory.General); }} />}
+      <div className={styles.priority}><span>Priority</span><div>{priorityLabels.map((label, value) => <Button key={label} variant="flat" selected={priority === value} className={priority === value ? styles.priorityActive : ""} onSelect={() => setPriority(value as EntryPriority)}>{label}</Button>)}</div></div>
       <Button variant="flat" className={styles.detailsToggle} onSelect={() => setShowDetails(!showDetails)}><span>{showDetails ? "-" : "+"}</span><strong>Add details</strong></Button>
       {showDetails && <div className={styles.details}>
-        <div className={styles.priority}><span>Priority</span><div>{priorityLabels.map((label, value) => <Button key={label} variant="flat" selected={priority === value} className={priority === value ? styles.priorityActive : ""} onSelect={() => setPriority(value as EntryPriority)}>{label}</Button>)}</div></div>
         <textarea aria-label="Description" value={description} maxLength={4000} rows={4} placeholder="Add a description (optional)" onChange={event => setDescription(event.target.value)} />
       </div>}
     </div>
