@@ -6,7 +6,7 @@ type StoredGeometry = { width: number; height: number; x: number; y: number };
 type Constraints = { minWidth: number; minHeight: number; maxWidthRatio: number; maxHeightRatio: number };
 
 const defaults: Record<PanelKind, StoredGeometry> = {
-  main: { width: 650, height: 560, x: .62, y: .12 },
+  main: { width: 650, height: 750, x: .62, y: .12 },
   sticky: { width: 380, height: 430, x: .7, y: .2 },
 };
 
@@ -16,6 +16,9 @@ const limit = (value: number, minimum: number, maximum: number) => Math.max(mini
 function readGeometry(key: PanelKind): StoredGeometry {
   try {
     const parsed = JSON.parse(localStorage.getItem(storageKey(key)) || "null");
+    // Upgrade only previous automatic defaults; manually chosen dimensions remain intact.
+    if (key === "main" && (parsed?.height === 500 || parsed?.height === 560 || parsed?.height === 690))
+      parsed.height = defaults.main.height;
     return { ...defaults[key], ...parsed };
   } catch {
     return defaults[key];

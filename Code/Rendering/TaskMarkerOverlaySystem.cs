@@ -31,9 +31,12 @@ namespace Planboard.Rendering
             if (_ui.MapDisplayMode == 0) return;
             OverlayRenderSystem.Buffer buffer = _overlay.GetBuffer(out JobHandle dependency);
             dependency.Complete();
+            CompleteDependency();
             using NativeArray<ArchetypeChunk> chunks = _markers.ToArchetypeChunkArray(Allocator.Temp);
-            ComponentTypeHandle<RuntimeTaskMarker> markerHandle = SystemAPI.GetComponentTypeHandle<RuntimeTaskMarker>(true);
-            ComponentTypeHandle<Transform> transformHandle = SystemAPI.GetComponentTypeHandle<Transform>(true);
+            // This managed GameSystemBase uses direct EntityQuery handles. SystemAPI
+            // requires a generated replacement that the game does not emit here.
+            ComponentTypeHandle<RuntimeTaskMarker> markerHandle = GetComponentTypeHandle<RuntimeTaskMarker>(true);
+            ComponentTypeHandle<Transform> transformHandle = GetComponentTypeHandle<Transform>(true);
             foreach (ArchetypeChunk chunk in chunks)
             {
                 NativeArray<RuntimeTaskMarker> markers = chunk.GetNativeArray(ref markerHandle);

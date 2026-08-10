@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Colossal;
 using Colossal.IO.AssetDatabase;
 using Game.Input;
@@ -40,6 +42,8 @@ namespace Planboard
         public bool ShowCompletedMarkers { get; set; }
         public bool ShowAllTitles { get; set; }
 
+        private readonly Dictionary<string, ProxyBinding.Watcher> _placementBindingWatchers = new();
+
         [SettingsUIDropdown(typeof(Settings), nameof(GetDeadlineModeOptions))]
         public string DeadlineMode { get; set; } = RealLifeDeadlineMode;
 
@@ -61,7 +65,55 @@ namespace Planboard
 
         public bool ResetBindings
         {
-            set { ResetKeyBindings(); }
+            set
+            {
+                ResetKeyBindings();
+                if (_placementBindingWatchers.Count > 0) EnablePlacementBindingMirrors();
+            }
+        }
+
+        internal void EnablePlacementBindingMirrors()
+        {
+            DisablePlacementBindingMirrors();
+            try
+            {
+                RegisterPlacementBindingMirror("Apply", ApplyPlacementAction);
+                RegisterPlacementBindingMirror("Secondary Apply", CancelPlacementAction);
+            }
+            catch (Exception exception)
+            {
+                DisablePlacementBindingMirrors();
+                Mod.Log.Warn($"Could not mirror the current game tool bindings; Planboard will use its default mouse bindings: {exception.Message}");
+            }
+        }
+
+        internal void DisablePlacementBindingMirrors()
+        {
+            foreach (ProxyBinding.Watcher watcher in _placementBindingWatchers.Values) watcher.Dispose();
+            _placementBindingWatchers.Clear();
+        }
+
+        private void RegisterPlacementBindingMirror(string gameActionName, string planboardActionName)
+        {
+            ProxyAction gameAction = InputManager.instance.FindAction(InputManager.kToolMap, gameActionName);
+            ProxyAction planboardAction = GetAction(planboardActionName);
+            ProxyBinding gameBinding = gameAction.bindings.FirstOrDefault(binding => (binding.device & InputManager.DeviceType.Mouse) != 0);
+            ProxyBinding planboardBinding = planboardAction.bindings.FirstOrDefault(binding => (binding.device & InputManager.DeviceType.Mouse) != 0);
+            if (string.IsNullOrEmpty(gameBinding.path))
+                throw new InvalidOperationException($"Game action '{gameActionName}' has no mouse binding.");
+            if (string.IsNullOrEmpty(planboardBinding.path))
+                throw new InvalidOperationException($"Planboard action '{planboardActionName}' has no mouse binding.");
+            ProxyBinding.Watcher watcher = new(gameBinding, binding => CopyBinding(planboardBinding, binding));
+            CopyBinding(planboardBinding, watcher.binding);
+            _placementBindingWatchers.Add(gameActionName, watcher);
+        }
+
+        private static void CopyBinding(ProxyBinding target, ProxyBinding source)
+        {
+            ProxyBinding replacement = target.Copy();
+            replacement.path = source.path;
+            replacement.modifiers = source.modifiers;
+            InputManager.instance.SetBinding(replacement, out _);
         }
 
         public override void SetDefaults()
@@ -93,7 +145,7 @@ namespace Planboard
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ApplyPlacement)), "Place marker" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.ApplyPlacement)), "Confirm the marker location while the placement tool is active." },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.CancelPlacement)), "Cancel marker placement" },
-                { _settings.GetOptionDescLocaleID(nameof(Settings.CancelPlacement)), "Cancel the active marker placement." },
+                { _settings.GetOptionDescLocaleID(nameof(Settings.CancelPlacement)), "Cancel marker placement while the placement tool is active." },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.DeadlineMode)), "Preferred deadline" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.DeadlineMode)), "Choose whether Planboard deadlines follow the real-life calendar or the city simulation calendar." },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ShowCompletedMarkers)), "Show completed markers" },

@@ -21,10 +21,10 @@ namespace Planboard.Tools
         public bool HasValidPreview => State == PlacementState.ValidPreview;
 
         private TaskDataSystem _data;
-        private ProxyAction _applyAction;
-        private ProxyAction _cancelAction;
+        private ProxyAction _applyPlacementAction;
+        private ProxyAction _cancelPlacementAction;
 
-        public override bool allowUnderground => true;
+        public override bool allowUnderground => false;
         public override Game.Prefabs.PrefabBase GetPrefab() => null;
         public override bool TrySetPrefab(Game.Prefabs.PrefabBase prefab) => false;
 
@@ -32,8 +32,8 @@ namespace Planboard.Tools
         {
             base.OnCreate();
             _data = World.GetOrCreateSystemManaged<TaskDataSystem>();
-            _applyAction = Mod.Settings.GetAction(Settings.ApplyPlacementAction);
-            _cancelAction = Mod.Settings.GetAction(Settings.CancelPlacementAction);
+            _applyPlacementAction = Mod.Settings.GetAction(Settings.ApplyPlacementAction);
+            _cancelPlacementAction = Mod.Settings.GetAction(Settings.CancelPlacementAction);
             Enabled = false;
         }
 
@@ -47,6 +47,7 @@ namespace Planboard.Tools
             PreviewPosition = default;
             m_ToolSystem.selected = Entity.Null;
             m_ToolSystem.activeTool = this;
+            Enabled = true;
             return true;
         }
 
@@ -56,22 +57,23 @@ namespace Planboard.Tools
             PreviewEntity = Entity.Null;
             PreviewPosition = default;
             EntryId = 0;
+            Enabled = false;
             if (m_ToolSystem.activeTool == this) m_ToolSystem.activeTool = m_DefaultToolSystem;
         }
 
         protected override void OnStartRunning()
         {
             base.OnStartRunning();
-            SetActionEnabled(_applyAction, true);
-            SetActionEnabled(_cancelAction, true);
+            SetActionEnabled(_applyPlacementAction, true);
+            SetActionEnabled(_cancelPlacementAction, true);
             if (State == PlacementState.Inactive) State = PlacementState.ChoosingLocation;
         }
 
         protected override void OnStopRunning()
         {
             base.OnStopRunning();
-            SetActionEnabled(_applyAction, false);
-            SetActionEnabled(_cancelAction, false);
+            SetActionEnabled(_applyPlacementAction, false);
+            SetActionEnabled(_cancelPlacementAction, false);
             bool interruptedPlacement = EntryId > 0 && State != PlacementState.Applied && State != PlacementState.Cancelled;
             PreviewEntity = Entity.Null;
             PreviewPosition = default;
@@ -95,7 +97,7 @@ namespace Planboard.Tools
             }
             catch (Exception exception)
             {
-                Mod.Log.Warn($"Placement input action is managed by the game and cannot be toggled: {exception.Message}");
+                Mod.Log.Warn($"Placement input action could not be {(enabled ? "enabled" : "disabled")}: {exception.Message}");
             }
         }
 
@@ -103,7 +105,7 @@ namespace Planboard.Tools
         {
             base.InitializeRaycast();
             m_ToolRaycastSystem.typeMask = TypeMask.Terrain | TypeMask.Net | TypeMask.StaticObjects;
-            m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground | CollisionMask.Underground;
+            m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground;
             m_ToolRaycastSystem.raycastFlags = RaycastFlags.SubElements | RaycastFlags.Cargo | RaycastFlags.Passenger;
             m_ToolRaycastSystem.netLayerMask = Layer.Road
                 | Layer.TrainTrack
@@ -117,10 +119,14 @@ namespace Planboard.Tools
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            if (m_FocusChanged) return inputDeps;
+            if (m_FocusChanged)
+            {
+                InitializeRaycast();
+                m_FocusChanged = false;
+            }
 
             bool uiDisabled = (m_ToolRaycastSystem.raycastFlags & (RaycastFlags.DebugDisable | RaycastFlags.UIDisable)) != 0;
-            if (_cancelAction.WasPressedThisFrame())
+            if (_cancelPlacementAction.WasPressedThisFrame() || cancelAction.WasPressedThisFrame() || secondaryApplyAction.WasPressedThisFrame())
             {
                 CancelPlacement();
                 return inputDeps;
@@ -145,7 +151,7 @@ namespace Planboard.Tools
                 PreviewEntity = Entity.Null;
             }
 
-            if (_applyAction.WasPressedThisFrame() && State == PlacementState.ValidPreview)
+            if (_applyPlacementAction.WasPressedThisFrame() && State == PlacementState.ValidPreview)
             {
                 Entity district = PreviewEntity != Entity.Null && EntityManager.HasComponent<Game.Areas.District>(PreviewEntity)
                     ? PreviewEntity
@@ -157,6 +163,7 @@ namespace Planboard.Tools
                     Mod.Log.Info($"Placed task {EntryId} at {PreviewPosition}");
                     State = PlacementState.Applied;
                     EntryId = 0;
+                    Enabled = false;
                     m_ToolSystem.activeTool = m_DefaultToolSystem;
                 }
             }

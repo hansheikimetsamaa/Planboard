@@ -14,6 +14,8 @@ export const Binding = {
   undoAvailable: "undoAvailable",
   windowLayoutRevision: "windowLayoutRevision",
   deadlineMode: "deadlineMode",
+  currentRealDate: "currentRealDate",
+  currentGameDate: "currentGameDate",
   dataReadOnly: "dataReadOnly",
   createEntry: "createEntry",
   createPinnedDraft: "createPinnedDraft",

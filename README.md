@@ -18,6 +18,13 @@ Planboard is a location-aware planning mod for Cities: Skylines II. It keeps iss
 
 ## Changelog
 
+### 0.1.3 - 2026-08-11
+
+- Restored terrain, road, and building marker placement, including Create & Place.
+- Restored calendar, deadline, map, autosave, undo, draft, and native placement flows.
+- Replaced cycling filters with dropdowns; improved toolbar and kind-icon contrast.
+- Fixed compact draft sizing and UI text encoding.
+
 ### 0.1.2 - 2026-08-05
 
 - Changed default shortcuts to `Ctrl+Alt+P` and `Ctrl+Alt+Shift+P` to avoid common mod conflicts.
@@ -32,11 +39,11 @@ Planboard is a location-aware planning mod for Cities: Skylines II. It keeps iss
 
 ## Repository layout
 
-- `Code/` — C# mod, ECS systems, placement tool, serialization, rendering, settings, and UI bindings
-- `UI/` — React/TypeScript Gameface UI
-- `Tests/` — domain, lifecycle, binding-contract, and repository tests
-- `docs/` — build, testing, and dependency notes
-- `Inspiration/` — ignored local reference material; never published or included in builds
+- `Code/` - C# mod, ECS systems, placement tool, serialization, rendering, settings, and UI bindings
+- `UI/` - React/TypeScript Gameface UI
+- `Tests/` - domain, lifecycle, binding-contract, and repository tests
+- `docs/` - build, testing, and dependency notes
+- `Inspiration/` - ignored local reference material; never published or included in builds
 
 Planboard uses `Planboard` consistently for its assembly, namespaces, settings, localization, bindings, UI module, and serializer identity. Pre-release development saves made under an older internal identity are not supported.
 

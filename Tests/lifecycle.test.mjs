@@ -15,13 +15,29 @@ test("unfinished placement drafts are transient and excluded from saves", async 
 
 test("switching tools cancels an unfinished placement without replacing the newly active tool", async () => {
   const tool = await read("../Code/Tools/TaskPlacementToolSystem.cs");
-  const stopHandler = tool.match(/protected override void OnStopRunning\(\)[\s\S]*?\n        }\n\n        private static void SetActionEnabled/);
+  const stopHandler = tool.match(/protected override void OnStopRunning\(\)[\s\S]*?\n        }\n\n        public override void InitializeRaycast/);
   assert.ok(stopHandler, "OnStopRunning handler was not found");
   assert.match(stopHandler[0], /bool interruptedPlacement = EntryId > 0/);
   assert.match(stopHandler[0], /State = PlacementState\.Cancelled;[\s\S]*EntryId = 0;/);
   assert.doesNotMatch(stopHandler[0], /m_ToolSystem\.activeTool/);
 });
 
+test("placement uses enabled mod actions that mirror the current native tool bindings", async () => {
+  const settings = await read("../Code/Settings.cs");
+  const mod = await read("../Code/Mod.cs");
+  const tool = await read("../Code/Tools/TaskPlacementToolSystem.cs");
+  assert.match(settings, /SettingsUIMouseAction\(ApplyPlacementAction/);
+  assert.match(settings, /SettingsUIMouseAction\(CancelPlacementAction/);
+  assert.match(settings, /FindAction\(InputManager\.kToolMap, gameActionName\)/);
+  assert.match(settings, /ProxyBinding\.Watcher/);
+  assert.match(mod, /Settings\.EnablePlacementBindingMirrors\(\)/);
+  assert.match(mod, /Settings\?\.DisablePlacementBindingMirrors\(\)/);
+  assert.match(tool, /SetActionEnabled\(_applyPlacementAction, true\)/);
+  assert.match(tool, /_applyPlacementAction\.WasPressedThisFrame\(\)/);
+  assert.match(tool, /_cancelPlacementAction\.WasPressedThisFrame\(\)/);
+  assert.match(tool, /secondaryApplyAction\.WasPressedThisFrame\(\)/);
+  assert.match(tool, /cancelAction\.WasPressedThisFrame\(\)/);
+});
 test("unsupported save formats fail closed instead of serializing empty Planboard data", async () => {
   const data = await read("../Code/Systems/TaskDataSystem.cs");
   const ui = await read("../Code/UI/TaskUISystem.cs");
@@ -56,7 +72,27 @@ test("marker synchronization preserves surviving marker entities", async () => {
   assert.match(markers, /if \(desired\.Contains\(entryId\)\) continue/);
 });
 
-test("navigation falls back to an invisible coordinate anchor when a marker is hidden", async () => {
+test("marker overlay uses direct GameSystemBase component handles", async () => {
+  const overlay = await read("../Code/Rendering/TaskMarkerOverlaySystem.cs");
+  assert.doesNotMatch(overlay, /SystemAPI\.GetComponentTypeHandle/);
+  assert.match(overlay, /CompleteDependency\(\);/);
+  assert.match(overlay, /GetComponentTypeHandle<RuntimeTaskMarker>\(true\)/);
+  assert.match(overlay, /GetComponentTypeHandle<Transform>\(true\)/);
+});
+
+test("map visibility modes remain authoritative and do not force selected notes open", async () => {
+  const overlay = await read("../UI/src/components/MapNotesOverlay.tsx");
+  const ui = await read("../Code/UI/TaskUISystem.cs");
+  assert.match(overlay, /if \(mode === MapDisplayMode\.Hidden \|\| draftId > 0\) return null;/);
+  assert.match(overlay, /const openClass = mode === MapDisplayMode\.Notes \? styles\.alwaysOpen : "";/);
+  assert.match(ui, /private void SetPanelVisible\(bool visible\)\s*\{\s*_panelVisible = visible;\s*if \(!visible\) SelectedEntryId = 0;\s*\}/);
+  assert.match(ui, /private void SelectEntry\(int id\)\s*\{\s*if \(id == 0\)\s*\{\s*SelectedEntryId = 0;\s*return;\s*\}/);
+});
+test("main panel retains the restored taller default without overriding manual sizes", async () => {
+  const geometry = await read("../UI/src/components/usePanelGeometry.ts");
+  assert.match(geometry, /main: \{ width: 650, height: 750/);
+  assert.match(geometry, /parsed\?\.height === 500 \|\| parsed\?\.height === 560 \|\| parsed\?\.height === 690/);
+});test("navigation falls back to an invisible coordinate anchor when a marker is hidden", async () => {
   const ui = await read("../Code/UI/TaskUISystem.cs");
   assert.match(ui, /_markers\.TryGetMarker\(id, out Entity marker\) \? marker : GetNavigationAnchor\(entry\.Position\)/);
   assert.match(ui, /_navigationAnchor = EntityManager\.CreateEntity\(\);/);
@@ -83,7 +119,9 @@ test("informational icons and free-form inputs have accessible names", async () 
   assert.match(status, /alt="" aria-hidden="true"/);
   assert.match(panel, /aria-label="Title"/);
   assert.match(panel, /aria-label="Description"/);
-  assert.match(panel, /aria-label="Real-life deadline"/);
+  assert.match(panel, /aria-label=\{label\}/);
+  assert.match(panel, /currentRealDate\$/);
+  assert.match(panel, /currentGameDate\$/);
 });
 
 test("delete and city load clear active transient state", async () => {
@@ -151,4 +189,37 @@ test("marker projection filters entries once into a reusable buffer", async () =
   const ui = await read("../Code/UI/TaskUISystem.cs");
   assert.match(ui, /readonly List<TaskEntry> _projectedEntries/);
   assert.match(ui, /_projectedEntries\.Clear\(\)[\s\S]*_projectedEntries\.Add\(entry\)[\s\S]*foreach \(TaskEntry entry in _projectedEntries\)/);
+});
+
+test("map selection clears focus without clearing an active placement or UI-driven entry edit", async () => {
+  const ui = await read("../Code/UI/TaskUISystem.cs");
+  assert.match(ui, /else if \(_placement\.EntryId == 0\)\s*\{\s*SelectedEntryId = 0;\s*\}/);
+  assert.match(ui, /SelectedEntryId = id;\s*_panelVisible = true;\s*_lastSelectedEntity = _toolSystem\.selected;/);
+});
+
+test("filters use explicit dropdown menus rather than cycling through options", async () => {
+  const controls = await read("../UI/src/components/EntryControls.tsx");
+  const styles = await read("../UI/src/components/mainPanel.module.scss");
+  const panel = await read("../UI/src/components/MainPanel.tsx");
+  assert.match(controls, /const \[open, setOpen\] = useState\(false\);/);
+  assert.match(controls, /className=\{styles\.choiceMenu\}/);
+  assert.doesNotMatch(controls, /options\[\(index \+ 1\)/);
+  assert.match(panel, /tone: value === EntryPriority\.None/);
+  assert.match(styles, /\.choiceMenu > button\.priorityHigh/);
+});
+
+test("toolbar keeps inactive controls legible while reserving colour for active state", async () => {
+  const toolbar = await read("../UI/src/components/ToggleButton.tsx");
+  const styles = await read("../UI/src/components/mapToolbar.module.scss");
+  assert.match(toolbar, /styles\.footerButtonNeutral/);
+  assert.match(toolbar, /styles\.footerButtonActive/);
+  assert.match(toolbar, /if \(placing \|\| draftId > 0\) setPaletteOpen\(false\);/);
+  assert.match(styles, /\.footerButtonNeutral \{/);
+  assert.match(styles, /\.footerButtonNeutral img \{/);
+  assert.match(styles, /\.footerButtonActive \{/);
+});
+
+test("obsolete collapsed deadline options styles are removed", async () => {
+  const styles = await read("../UI/src/components/mainPanel.module.scss");
+  assert.doesNotMatch(styles, /\.moreOptions|\.moreBody/);
 });

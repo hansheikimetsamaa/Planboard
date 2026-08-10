@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using Colossal.UI.Binding;
 using Colossal.Serialization.Entities;
+using Game;
 using Game.Objects;
 using Game.Rendering;
+using Game.SceneFlow;
 using Game.Simulation;
 using Game.Tools;
 using Game.UI;
@@ -12,11 +14,8 @@ using Planboard.Data;
 using Planboard.Systems;
 using Planboard.Tools;
 using Unity.Entities;
-
-namespace Planboard.UI
-{
-    public partial class TaskUISystem : UISystemBase
-    {
+namespace Planboard.UI {
+    public partial class TaskUISystem : UISystemBase {
         private TaskDataSystem _data;
         private TaskMarkerSystem _markers;
         private TaskPlacementToolSystem _placement;
@@ -35,12 +34,9 @@ namespace Planboard.UI
         private long _deleteUndoExpiresUtcTicks;
         private PlacementState _lastPlacementState = PlacementState.Inactive;
         private Entity _navigationAnchor = Entity.Null;
-
         public int SelectedEntryId { get; private set; }
         public int MapDisplayMode { get; private set; } = 1;
-
-        protected override void OnCreate()
-        {
+        protected override void OnCreate() {
             base.OnCreate();
             _data = World.GetOrCreateSystemManaged<TaskDataSystem>();
             _markers = World.GetOrCreateSystemManaged<TaskMarkerSystem>();
@@ -48,7 +44,6 @@ namespace Planboard.UI
             _toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
             _camera = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
             _time = World.GetOrCreateSystemManaged<TimeSystem>();
-
             AddUpdateBinding(new GetterValueBinding<uint>(UIBindingConstants.Group, UIBindingConstants.Revision, () => _data.Revision));
             AddUpdateBinding(new GetterValueBinding<bool>(UIBindingConstants.Group, UIBindingConstants.PanelVisible, () => _panelVisible));
             AddUpdateBinding(new GetterValueBinding<int>(UIBindingConstants.Group, UIBindingConstants.SelectedEntryId, () => SelectedEntryId));
@@ -60,11 +55,12 @@ namespace Planboard.UI
             AddUpdateBinding(new GetterValueBinding<bool>(UIBindingConstants.Group, UIBindingConstants.UndoAvailable, IsUndoAvailable));
             AddUpdateBinding(new GetterValueBinding<int>(UIBindingConstants.Group, UIBindingConstants.WindowLayoutRevision, () => Mod.Settings.WindowLayoutRevision));
             AddUpdateBinding(new GetterValueBinding<string>(UIBindingConstants.Group, UIBindingConstants.DeadlineMode, () => Mod.Settings.DeadlineMode == Settings.InGameDeadlineMode ? Settings.InGameDeadlineMode : Settings.RealLifeDeadlineMode));
+            AddUpdateBinding(new GetterValueBinding<string>(UIBindingConstants.Group, UIBindingConstants.CurrentRealDate, () => DateTime.Today.ToString("yyyy-MM-dd")));
+            AddUpdateBinding(new GetterValueBinding<string>(UIBindingConstants.Group, UIBindingConstants.CurrentGameDate, () => _time.GetCurrentDateTime().Date.ToString("yyyy-MM-dd")));
             AddUpdateBinding(new GetterValueBinding<bool>(UIBindingConstants.Group, UIBindingConstants.DataReadOnly, () => _data.IsReadOnly));
             AddUpdateBinding(_entriesBinding = new RawValueBinding(UIBindingConstants.Group, UIBindingConstants.Entries, WriteEntries));
             AddUpdateBinding(_issuesBinding = new RawValueBinding(UIBindingConstants.Group, UIBindingConstants.DataIssues, WriteDataIssues));
             AddUpdateBinding(_projectedMarkersBinding = new RawValueBinding(UIBindingConstants.Group, UIBindingConstants.ProjectedMarkers, WriteProjectedMarkers));
-
             AddBinding(new RawTriggerBinding(UIBindingConstants.Group, UIBindingConstants.CreateEntry, CreateEntry));
             AddBinding(new TriggerBinding<int>(UIBindingConstants.Group, UIBindingConstants.CreatePinnedDraft, CreatePinnedDraft));
             AddBinding(new TriggerBinding<int>(UIBindingConstants.Group, UIBindingConstants.FinishDraft, FinishDraft));
@@ -83,53 +79,56 @@ namespace Planboard.UI
             AddBinding(new TriggerBinding<bool>(UIBindingConstants.Group, UIBindingConstants.SetPanelVisible, SetPanelVisible));
             AddBinding(new TriggerBinding(UIBindingConstants.Group, UIBindingConstants.CycleMapDisplayMode, CycleMapDisplayMode));
             AddBinding(new TriggerBinding(UIBindingConstants.Group, UIBindingConstants.UndoDelete, UndoDelete));
-        }
 
-        protected override void OnDestroy()
-        {
+        }
+        protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode) {
+            base.OnGameLoadingComplete(purpose, mode);
+
+        }
+        protected override void OnDestroy() {
             if (EntityManager.Exists(_navigationAnchor)) EntityManager.DestroyEntity(_navigationAnchor);
             base.OnDestroy();
+
         }
-
-        protected override void OnUpdate()
-        {
+        protected override void OnUpdate() {
             base.OnUpdate();
-
             PlacementState placementState = _placement.State;
-            if (placementState != _lastPlacementState)
-            {
+            if (placementState != _lastPlacementState) {
                 if (_draftEntryId > 0 && placementState == PlacementState.Cancelled) DiscardDraft(_draftEntryId);
-                if (_createPlacementEntryId > 0 && placementState == PlacementState.Cancelled)
-                {
+                if (_createPlacementEntryId > 0 && placementState == PlacementState.Cancelled) {
                     _data.DeleteEntry(_createPlacementEntryId);
                     if (SelectedEntryId == _createPlacementEntryId) SelectedEntryId = 0;
                     _createPlacementEntryId = 0;
                     _panelVisible = true;
+
                 }
-                else if (_createPlacementEntryId > 0 && placementState == PlacementState.Applied)
-                {
+                else if (_createPlacementEntryId > 0 && placementState == PlacementState.Applied) {
                     _data.CommitTransientEntry(_createPlacementEntryId);
                     SelectedEntryId = _createPlacementEntryId;
                     _createPlacementEntryId = 0;
                     _panelVisible = true;
+
                 }
+
             }
             _lastPlacementState = placementState;
             if (_deletedEntry != null && !IsUndoAvailable()) _deletedEntry = null;
-
             Entity selected = _toolSystem.selected;
             if (selected == _lastSelectedEntity) return;
             _lastSelectedEntity = selected;
-            if (selected != Entity.Null && EntityManager.Exists(selected) && EntityManager.HasComponent<RuntimeTaskMarker>(selected))
-            {
+            if (selected != Entity.Null && EntityManager.Exists(selected) && EntityManager.HasComponent<RuntimeTaskMarker>(selected)) {
                 RuntimeTaskMarker marker = EntityManager.GetComponentData<RuntimeTaskMarker>(selected);
                 SelectedEntryId = marker.EntryId;
                 _panelVisible = true;
-            }
-        }
 
-        protected override void OnGameLoaded(Context serializationContext)
-        {
+            }
+            else if (_placement.EntryId == 0) {
+                SelectedEntryId = 0;
+
+            }
+
+        }
+        protected override void OnGameLoaded(Context serializationContext) {
             base.OnGameLoaded(serializationContext);
             if (_placement.EntryId > 0) _placement.CancelPlacement();
             _draftEntryId = 0;
@@ -140,21 +139,32 @@ namespace Planboard.UI
             _lastSelectedEntity = Entity.Null;
             SelectedEntryId = 0;
             _panelVisible = false;
+
         }
+        public void TogglePanel() {
+            _panelVisible = !_panelVisible;
 
-        public void TogglePanel() { _panelVisible = !_panelVisible; }
-        private void CycleMapDisplayMode() { MapDisplayMode = (MapDisplayMode + 1) % 3; }
-        private void SetPanelVisible(bool visible) { _panelVisible = visible; }
+        }
+        private void CycleMapDisplayMode() {
+            MapDisplayMode = (MapDisplayMode + 1) % 3;
 
-        private bool IsDistrictSelected()
-        {
+        }
+        private void SetPanelVisible(bool visible) {
+            _panelVisible = visible;
+            if (!visible) SelectedEntryId = 0;
+
+        }
+        private bool IsDistrictSelected() {
             Entity selected = _toolSystem.selected;
             return selected != Entity.Null && EntityManager.Exists(selected) && EntityManager.HasComponent<Game.Areas.District>(selected);
-        }
 
-        private void CreateEntry(IJsonReader reader)
-        {
-            if (reader.GetArgumentsCount() < 4) { Mod.Log.Warn("CreateEntry received too few UI arguments"); return; }
+        }
+        private void CreateEntry(IJsonReader reader) {
+            if (reader.GetArgumentsCount() < 4) {
+                Mod.Log.Warn("CreateEntry received too few UI arguments");
+                return;
+
+            }
             reader.Read(out string title);
             reader.Read(out int kind);
             reader.Read(out int category);
@@ -166,70 +176,67 @@ namespace Planboard.UI
             int priority = (int)EntryPriority.None;
             string realDueTicks = "0";
             string gameDueTicks = "0";
-            if (reader.GetArgumentsCount() >= 10)
-            {
+            if (reader.GetArgumentsCount() >= 10) {
                 reader.Read(out description);
                 reader.Read(out status);
                 reader.Read(out priority);
                 reader.Read(out realDueTicks);
                 reader.Read(out gameDueTicks);
+
             }
             int id = _data.CreateEntry(title, (EntryKind)kind, (EntryCategory)category, customCategory, transient: placeAfterCreate);
             if (id <= 0) return;
             long.TryParse(realDueTicks, out long realTicks);
             long.TryParse(gameDueTicks, out long gameTicks);
-            _data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory,
-                (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks);
+            _data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory, (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks);
             Mod.Log.Info($"Created task {id}: {title}");
-            if (!placeAfterCreate) { SelectEntry(id); return; }
+            if (!placeAfterCreate) {
+                SelectEntry(id);
+                return;
+
+            }
             _createPlacementEntryId = id;
             SelectedEntryId = id;
             _panelVisible = false;
-            if (!_placement.BeginPlacement(id))
-            {
+            if (!_placement.BeginPlacement(id)) {
                 _data.DeleteEntry(id);
                 _createPlacementEntryId = 0;
                 SelectedEntryId = 0;
                 _panelVisible = true;
-            }
-        }
 
-        private void CreatePinnedDraft(int kindValue)
-        {
+            }
+
+        }
+        private void CreatePinnedDraft(int kindValue) {
             if (_draftEntryId > 0) return;
-            EntryKind kind = kindValue >= (int)EntryKind.Issue && kindValue <= (int)EntryKind.Idea
-                ? (EntryKind)kindValue
-                : EntryKind.Task;
+            EntryKind kind = kindValue >= (int)EntryKind.Issue && kindValue <= (int)EntryKind.Idea ? (EntryKind)kindValue : EntryKind.Task;
             string title = kind == EntryKind.Issue ? "New issue" : kind == EntryKind.Idea ? "New idea" : "New note";
             int id = _data.CreateEntry(title, kind, EntryCategory.General, transient: true);
             if (id == 0) return;
-
             _draftEntryId = id;
             SelectedEntryId = id;
             _panelVisible = false;
-            if (!_placement.BeginPlacement(id))
-            {
+            if (!_placement.BeginPlacement(id)) {
                 _data.DeleteEntry(id);
                 _draftEntryId = 0;
                 SelectedEntryId = 0;
-            }
-            else
-            {
-                Mod.Log.Info($"Started pinned {kind} draft {id}");
-            }
-        }
 
-        private void FinishDraft(int id)
-        {
+            }
+            else {
+                Mod.Log.Info($"Started pinned {kind} draft {id}");
+
+            }
+
+        }
+        private void FinishDraft(int id) {
             if (id != _draftEntryId || !_data.CommitTransientEntry(id)) return;
             _draftEntryId = 0;
             SelectedEntryId = 0;
             _panelVisible = false;
             Mod.Log.Info($"Finished pinned draft {id}");
-        }
 
-        private void CommitDraft(IJsonReader reader)
-        {
+        }
+        private void CommitDraft(IJsonReader reader) {
             if (reader.GetArgumentsCount() < 10) return;
             reader.Read(out int id);
             reader.Read(out string title);
@@ -244,13 +251,11 @@ namespace Planboard.UI
             long.TryParse(realDueTicks, out long realTicks);
             long.TryParse(gameDueTicks, out long gameTicks);
             if (id != _draftEntryId || !_data.IsTransientEntry(id)) return;
-            if (!_data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory,
-                    (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks)) return;
+            if (!_data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory, (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks)) return;
             FinishDraft(id);
-        }
 
-        private void DiscardDraft(int id)
-        {
+        }
+        private void DiscardDraft(int id) {
             if (id != _draftEntryId) return;
             if (_placement.EntryId == id) _placement.CancelPlacement();
             _data.DeleteEntry(id);
@@ -258,9 +263,9 @@ namespace Planboard.UI
             if (SelectedEntryId == id) SelectedEntryId = 0;
             _panelVisible = false;
             Mod.Log.Info($"Discarded pinned draft {id}");
+
         }
-        private void UpdateEntry(IJsonReader reader)
-        {
+        private void UpdateEntry(IJsonReader reader) {
             if (reader.GetArgumentsCount() < 10) return;
             reader.Read(out int id);
             reader.Read(out string title);
@@ -274,16 +279,13 @@ namespace Planboard.UI
             reader.Read(out string gameDueTicks);
             long.TryParse(realDueTicks, out long realTicks);
             long.TryParse(gameDueTicks, out long gameTicks);
-            _data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory,
-                (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks);
-        }
+            _data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory, (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks);
 
-        private void DeleteEntry(IJsonReader reader)
-        {
+        }
+        private void DeleteEntry(IJsonReader reader) {
             if (reader.GetArgumentsCount() < 1) return;
             reader.Read(out int id);
-            if (reader.GetArgumentsCount() >= 10)
-            {
+            if (reader.GetArgumentsCount() >= 10) {
                 reader.Read(out string title);
                 reader.Read(out string description);
                 reader.Read(out int kind);
@@ -295,75 +297,82 @@ namespace Planboard.UI
                 reader.Read(out string gameDueTicks);
                 long.TryParse(realDueTicks, out long realTicks);
                 long.TryParse(gameDueTicks, out long gameTicks);
-                _data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory,
-                    (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks);
-            }
+                _data.UpdateEntry(id, title, description, (EntryKind)kind, (EntryCategory)category, customCategory, (EntryStatus)status, (EntryPriority)priority, realTicks, gameTicks);
 
+            }
             TaskEntry entry = _data.Find(id);
             if (entry == null) return;
             if (_placement.EntryId == id) _placement.CancelPlacement();
             _deletedEntry = entry.Clone();
             _deleteUndoExpiresUtcTicks = DateTime.UtcNow.AddSeconds(8).Ticks;
-            if (!_data.DeleteEntry(id)) { _deletedEntry = null; return; }
+            if (!_data.DeleteEntry(id)) {
+                _deletedEntry = null;
+                return;
+
+            }
             if (SelectedEntryId == id) SelectedEntryId = 0;
             if (_draftEntryId == id) _draftEntryId = 0;
             if (_createPlacementEntryId == id) _createPlacementEntryId = 0;
+
         }
-
         private bool IsUndoAvailable() => _deletedEntry != null && DateTime.UtcNow.Ticks <= _deleteUndoExpiresUtcTicks;
+        private void UndoDelete() {
+            if (!IsUndoAvailable()) {
+                _deletedEntry = null;
+                return;
 
-        private void UndoDelete()
-        {
-            if (!IsUndoAvailable()) { _deletedEntry = null; return; }
+            }
             TaskEntry snapshot = _deletedEntry;
             _deletedEntry = null;
             if (_data.RestoreEntry(snapshot)) SelectedEntryId = 0;
+
         }
-        private void SetStatus(IJsonReader reader)
-        {
+        private void SetStatus(IJsonReader reader) {
             if (reader.GetArgumentsCount() < 2) return;
             reader.Read(out int id);
             reader.Read(out int status);
             _data.SetStatus(id, (EntryStatus)status);
+
         }
+        private void ConvertIdea(int id) {
+            _data.ConvertIdeaToTask(id);
 
-        private void ConvertIdea(int id) { _data.ConvertIdeaToTask(id); }
+        }
+        private void SelectEntry(int id) {
+            if (id == 0) {
+                SelectedEntryId = 0;
+                return;
 
-        private void SelectEntry(int id)
-        {
+            }
             if (_data.Find(id) == null) return;
             SelectedEntryId = id;
             _panelVisible = true;
-        }
+            _lastSelectedEntity = _toolSystem.selected;
 
-        public void BeginPlacement(int id)
-        {
+        }
+        public void BeginPlacement(int id) {
             if (_data.Find(id) == null) return;
             if (_placement.EntryId > 0 && _placement.EntryId != id) return;
             if (_placement.BeginPlacement(id)) SelectEntry(id);
-        }
 
-        private void RemoveLocation(int id)
-        {
+        }
+        private void RemoveLocation(int id) {
             if (_placement.EntryId == id) _placement.CancelPlacement();
             _data.RemoveLocation(id);
-        }
 
-        private void CreateDistrictEntry()
-        {
+        }
+        private void CreateDistrictEntry() {
             Entity district = _toolSystem.selected;
             if (district == Entity.Null || !EntityManager.Exists(district) || !EntityManager.HasComponent<Game.Areas.District>(district)) return;
             int id = _data.CreateEntry("New district task", EntryKind.Task, EntryCategory.General);
             if (id == 0) return;
-
             Unity.Mathematics.float3 position = default;
             if (EntityManager.HasComponent<Game.Areas.Geometry>(district)) position = EntityManager.GetComponentData<Game.Areas.Geometry>(district).m_CenterPosition;
             _data.SetLocation(id, position, district, district, markerMoved: false);
             SelectEntry(id);
-        }
 
-        private void NavigateToEntry(int id)
-        {
+        }
+        private void NavigateToEntry(int id) {
             SelectEntry(id);
             TaskEntry entry = _data.Find(id);
             if (entry == null || !entry.HasLocation || _camera.orbitCameraController == null) return;
@@ -371,26 +380,23 @@ namespace Planboard.UI
             _camera.orbitCameraController.followedEntity = target;
             _camera.orbitCameraController.TryMatchPosition(_camera.activeCameraController);
             _camera.activeCameraController = _camera.orbitCameraController;
-        }
 
-        private Entity GetNavigationAnchor(Unity.Mathematics.float3 position)
-        {
-            if (!EntityManager.Exists(_navigationAnchor))
-            {
+        }
+        private Entity GetNavigationAnchor(Unity.Mathematics.float3 position) {
+            if (!EntityManager.Exists(_navigationAnchor)) {
                 _navigationAnchor = EntityManager.CreateEntity();
                 EntityManager.AddComponentData(_navigationAnchor, new Transform(position, Unity.Mathematics.quaternion.identity));
+
             }
             EntityManager.SetComponentData(_navigationAnchor, new Transform(position, Unity.Mathematics.quaternion.identity));
             return _navigationAnchor;
-        }
 
-        private void WriteEntries(IJsonWriter writer)
-        {
+        }
+        private void WriteEntries(IJsonWriter writer) {
             writer.ArrayBegin((uint)_data.Entries.Count);
             long realToday = DateTime.Today.Ticks;
             long gameToday = _time.GetCurrentDateTime().Date.Ticks;
-            foreach (TaskEntry entry in _data.Entries)
-            {
+            foreach (TaskEntry entry in _data.Entries) {
                 writer.TypeBegin("Planboard.EntryView");
                 Write(writer, "id", entry.Id);
                 Write(writer, "title", entry.Title);
@@ -415,29 +421,23 @@ namespace Planboard.UI
                 Write(writer, "hasDistrict", entry.LinkedDistrict != Entity.Null && EntityManager.Exists(entry.LinkedDistrict));
                 Write(writer, "markerMoved", entry.MarkerMoved);
                 writer.TypeEnd();
+
             }
             writer.ArrayEnd();
-        }
 
-        private void WriteProjectedMarkers(IJsonWriter writer)
-        {
+        }
+        private void WriteProjectedMarkers(IJsonWriter writer) {
             UnityEngine.Camera camera = _camera.activeCamera;
-            if ((MapDisplayMode == 0 && SelectedEntryId <= 0) || camera == null || camera.pixelWidth <= 0 || camera.pixelHeight <= 0)
-            {
+            if ((MapDisplayMode == 0 && SelectedEntryId <= 0) || camera == null || camera.pixelWidth <= 0 || camera.pixelHeight <= 0) {
                 writer.ArrayBegin(0);
                 writer.ArrayEnd();
                 return;
+
             }
-
             _projectedEntries.Clear();
-            foreach (TaskEntry entry in _data.Entries)
-                if (entry.HasLocation && (MapDisplayMode != 0 || entry.Id == SelectedEntryId) &&
-                    (entry.Id == SelectedEntryId || entry.Status != EntryStatus.Done || Mod.Settings.ShowCompletedMarkers))
-                    _projectedEntries.Add(entry);
-
+            foreach (TaskEntry entry in _data.Entries) if (entry.HasLocation && (MapDisplayMode != 0 || entry.Id == SelectedEntryId) && (entry.Id == SelectedEntryId || entry.Status != EntryStatus.Done || Mod.Settings.ShowCompletedMarkers)) _projectedEntries.Add(entry);
             writer.ArrayBegin((uint)_projectedEntries.Count);
-            foreach (TaskEntry entry in _projectedEntries)
-            {
+            foreach (TaskEntry entry in _projectedEntries) {
                 UnityEngine.Vector3 screen = camera.WorldToScreenPoint(new UnityEngine.Vector3(entry.Position.x, entry.Position.y + 2f, entry.Position.z));
                 float x = screen.x / camera.pixelWidth;
                 float y = 1f - screen.y / camera.pixelHeight;
@@ -448,26 +448,45 @@ namespace Planboard.UI
                 Write(writer, "screenY", y);
                 Write(writer, "visible", visible);
                 writer.TypeEnd();
+
             }
             writer.ArrayEnd();
+
         }
-        private void WriteDataIssues(IJsonWriter writer)
-        {
+        private void WriteDataIssues(IJsonWriter writer) {
             writer.ArrayBegin((uint)_data.DataIssues.Count);
-            foreach (TaskDataIssue issue in _data.DataIssues)
-            {
+            foreach (TaskDataIssue issue in _data.DataIssues) {
                 writer.TypeBegin("Planboard.DataIssue");
                 Write(writer, "severity", (int)issue.Severity);
                 Write(writer, "entryId", issue.EntryId);
                 Write(writer, "message", issue.Message);
                 writer.TypeEnd();
+
             }
             writer.ArrayEnd();
+
+        }
+        private static void Write(IJsonWriter writer, string name, string value) {
+            writer.PropertyName(name);
+            writer.Write(value);
+
+        }
+        private static void Write(IJsonWriter writer, string name, int value) {
+            writer.PropertyName(name);
+            writer.Write(value);
+
+        }
+        private static void Write(IJsonWriter writer, string name, float value) {
+            writer.PropertyName(name);
+            writer.Write(value);
+
+        }
+        private static void Write(IJsonWriter writer, string name, bool value) {
+            writer.PropertyName(name);
+            writer.Write(value);
+
         }
 
-        private static void Write(IJsonWriter writer, string name, string value) { writer.PropertyName(name); writer.Write(value); }
-        private static void Write(IJsonWriter writer, string name, int value) { writer.PropertyName(name); writer.Write(value); }
-        private static void Write(IJsonWriter writer, string name, float value) { writer.PropertyName(name); writer.Write(value); }
-        private static void Write(IJsonWriter writer, string name, bool value) { writer.PropertyName(name); writer.Write(value); }
     }
+
 }

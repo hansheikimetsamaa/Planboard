@@ -33,9 +33,10 @@ export function MapToolbar() {
   const placing = placementState >= PlacementState.ChoosingLocation && placementState <= PlacementState.InvalidPreview;
 
   useEffect(() => {
+    if (placing || draftId > 0) setPaletteOpen(false);
     if (placementState === PlacementState.Applied || placementState === PlacementState.Cancelled)
       setPlacingKind(null);
-  }, [placementState]);
+  }, [draftId, placing, placementState]);
 
   const begin = (kind: EntryKind) => {
     setPlacingKind(kind);
@@ -52,7 +53,7 @@ export function MapToolbar() {
   return <div className={styles.footerGroup}>
     <div className={styles.pinControl}>
       <Tooltip tooltip={placing ? "Cancel pin placement" : "Add a map pin"}>
-        <Button src={pinIcon} variant="flat" selected={placing || paletteOpen} className={styles.footerButton} onSelect={() => {
+        <Button src={pinIcon} variant="flat" selected={placing || paletteOpen} className={`${styles.footerButton} ${placing || paletteOpen ? styles.footerButtonActive : styles.footerButtonNeutral}`} onSelect={() => {
           if (placing) trigger(Binding.group, Binding.cancelPlacement);
           else if (draftId === 0) setPaletteOpen(!paletteOpen);
         }} />
@@ -68,13 +69,13 @@ export function MapToolbar() {
     <span className={styles.separator} />
     <div className={styles.displayControl}>
       <Tooltip tooltip={`${visibilityLabel} - click to change`}>
-        <Button variant="flat" selected={mapDisplayMode !== MapDisplayMode.Hidden} className={`${styles.footerButton} ${styles.visibilityButton}`} onSelect={() => trigger(Binding.group, Binding.cycleMapDisplayMode)}><VisibilityIcon mode={mapDisplayMode} /></Button>
+        <Button variant="flat" selected={mapDisplayMode !== MapDisplayMode.Hidden} className={`${styles.footerButton} ${styles.visibilityButton} ${mapDisplayMode !== MapDisplayMode.Hidden ? styles.footerButtonActive : styles.footerButtonNeutral}`} onSelect={() => trigger(Binding.group, Binding.cycleMapDisplayMode)}><VisibilityIcon mode={mapDisplayMode} /></Button>
       </Tooltip>
       <span>{mapDisplayMode === MapDisplayMode.Hidden ? "OFF" : mapDisplayMode === MapDisplayMode.Pins ? "PIN" : "ALL"}</span>
     </div>
     <span className={styles.separator} />
     <Tooltip tooltip={t("ToggleTooltip", "Open Planboard") }>
-      <Button src={notepadIcon} variant="flat" selected={visible} className={styles.footerButton} onSelect={() => trigger(Binding.group, Binding.setPanelVisible, !visible)} />
+      <Button src={notepadIcon} variant="flat" selected={visible} className={`${styles.footerButton} ${visible ? styles.footerButtonActive : styles.footerButtonNeutral}`} onSelect={() => trigger(Binding.group, Binding.setPanelVisible, !visible)} />
     </Tooltip>
   </div>;
 }

@@ -16,4 +16,6 @@ export const undoAvailable$ = bindValue<boolean>(Binding.group, Binding.undoAvai
 
 export const windowLayoutRevision$ = bindValue<number>(Binding.group, Binding.windowLayoutRevision, 0);
 export const deadlineMode$ = bindValue<DeadlineMode>(Binding.group, Binding.deadlineMode, "real");
+export const currentRealDate$ = bindValue<string>(Binding.group, Binding.currentRealDate, "");
+export const currentGameDate$ = bindValue<string>(Binding.group, Binding.currentGameDate, "");
 export const dataReadOnly$ = bindValue<boolean>(Binding.group, Binding.dataReadOnly, false);

@@ -26,12 +26,13 @@ namespace Planboard
 
         public void OnLoad(UpdateSystem updateSystem)
         {
-            Log.Info("Loading Planboard 0.1.1");
+            Log.Info($"Loading Planboard {typeof(Mod).Assembly.GetName().Version}");
 
             Settings = new Settings(this);
             Settings.RegisterKeyBindings();
             Settings.RegisterInOptionsUI();
             AssetDatabase.global.LoadSettings("Planboard", Settings, new Settings(this));
+            Settings.EnablePlacementBindingMirrors();
             GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(Settings));
 
             _toggleAction = Settings.GetAction(Settings.TogglePanelAction);
@@ -75,6 +76,7 @@ namespace Planboard
         {
             if (_toggleAction != null) _toggleAction.onInteraction -= OnTogglePanel;
             if (_placeAction != null) _placeAction.onInteraction -= OnPlaceMarker;
+            Settings?.DisablePlacementBindingMirrors();
             Settings?.UnregisterInOptionsUI();
             Settings = null;
             Log.Info("Disposed Planboard");

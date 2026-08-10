@@ -1,4 +1,4 @@
-.footerGroup{height:38rem;display:flex;align-items:center;margin-right:7rem;padding:2rem 4rem;color:#dff7ff;background-color:rgba(12,25,33,.82);border:1rem solid rgba(142,178,194,.3);border-radius:19rem;box-sizing:border-box;box-shadow:0 2rem 8rem rgba(0,0,0,.22)}
+﻿.footerGroup{height:38rem;display:flex;align-items:center;margin-right:7rem;padding:2rem 4rem;color:#dff7ff;background-color:rgba(12,25,33,.82);border:1rem solid rgba(142,178,194,.3);border-radius:19rem;box-sizing:border-box;box-shadow:0 2rem 8rem rgba(0,0,0,.22)}
 .footerButton{width:31rem;height:31rem;min-width:31rem;display:flex;align-items:center;justify-content:center;padding:5rem;color:#dff7ff;background-color:transparent;border:0;border-radius:16rem;box-sizing:border-box}
 .footerButton:hover{background-color:rgba(220,244,252,.12)}
 .footerButton:active{background-color:rgba(94,207,245,.2)}
@@ -14,7 +14,7 @@
 .placementToast{position:absolute;z-index:1190;left:-5rem;bottom:47rem;width:220rem;display:flex;flex-direction:column;padding:9rem 11rem;color:#f4f9fc;background-color:rgba(8,20,29,.94);border:1rem solid rgba(94,207,245,.35);border-radius:8rem;box-shadow:0 8rem 24rem rgba(0,0,0,.35)}
 .placementToast strong{font-size:11rem}.placementToast span{margin-top:3rem;color:rgba(220,237,245,.62);font-size:9rem}
 .displayControl>span{position:absolute;right:-2rem;bottom:-1rem;min-width:16rem;height:9rem;display:flex;align-items:center;justify-content:center;padding:0 2rem;color:#07141c;background-color:#67d5f3;border-radius:5rem;font-size:6rem;font-weight:750;pointer-events:none}
-.kindPalette b img{width:15rem;height:15rem;display:block;margin:0}
+.kindPalette b img{width:15rem;height:15rem;display:block;margin:0;filter:brightness(0) saturate(100%);opacity:.72}
 @media(max-width:1280px){.footerGroup{margin-right:4rem;padding-left:2rem;padding-right:2rem}.footerButton{width:28rem;height:28rem;min-width:28rem}.footerButton img{width:20rem;height:20rem}.separator{margin-left:1rem;margin-right:1rem}}
 .visibilityButton svg{width:22rem;height:22rem;display:block;overflow:visible}
 .eyeOuter,.eyeIris{fill:none;stroke-width:2.5;transition:stroke .16s ease,fill .16s ease,opacity .16s ease}
@@ -23,3 +23,23 @@
 .eyePins .eyeOuter{stroke:rgba(190,204,211,.48)}.eyePins .eyeIris{stroke:#64d5f5}.eyePins .eyePupil{fill:#64d5f5}
 .eyeNotes .eyeOuter{stroke:#64d5f5}.eyeNotes .eyeIris{fill:rgba(100,213,245,.25);stroke:#dff7ff}.eyeNotes .eyePupil{fill:#dff7ff}
 .visibilityButton:hover .eyeHidden .eyeOuter,.visibilityButton:hover .eyeHidden .eyeIris{stroke:rgba(224,236,241,.72)}.visibilityButton:hover .eyeHidden .eyePupil{fill:rgba(224,236,241,.72)}
+
+/* The inactive map controls must stay discoverable over a moving city backdrop. */
+.footerButtonNeutral {
+  background-color: rgba(210, 235, 245, .10);
+  border: 1rem solid rgba(220, 241, 248, .24);
+  box-shadow: inset 0 1rem 0 rgba(255, 255, 255, .10), 0 1rem 5rem rgba(0, 0, 0, .18);
+}
+.footerButtonNeutral img {
+  filter: saturate(0.5) brightness(1.15);
+  opacity: 0.7;
+}
+.footerButtonActive {
+  background-color: rgba(94, 207, 245, .28);
+  border: 1rem solid rgba(145, 225, 249, .72);
+  box-shadow: inset 0 1rem 0 rgba(255, 255, 255, .22), 0 0 9rem rgba(94, 207, 245, .22);
+}
+.footerButtonActive img { filter: brightness(1.18) saturate(1.12); }
+.footerButton:hover { background-color: rgba(220, 244, 252, .20); border-color: rgba(225, 246, 252, .52); }
+.eyeHidden .eyeOuter, .eyeHidden .eyeIris { stroke: rgba(228, 242, 248, .90); }
+.eyeHidden .eyePupil { fill: rgba(228, 242, 248, .90); }

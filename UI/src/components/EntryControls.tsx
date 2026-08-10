@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "cs2/ui";
 import { EntryCategory, EntryKind, EntryStatus } from "../types/contracts";
 import { KindIcon } from "./KindIcon";
@@ -8,6 +8,7 @@ import styles from "./mainPanel.module.scss";
 export type Option<T extends string | number> = {
   label: ReactNode;
   value: T;
+  tone?: "none" | "low" | "medium" | "high";
 };
 
 export function Choice<T extends string | number>({ label, value, options, onChange }: {
@@ -16,18 +17,33 @@ export function Choice<T extends string | number>({ label, value, options, onCha
   options: readonly Option<T>[];
   onChange: (value: T) => void;
 }) {
-  const index = Math.max(0, options.findIndex(option => option.value === value));
-  const current = options[index];
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const current = options.find(option => option.value === value) ?? options[0];
 
-  return <div className={styles.field}>
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event: MouseEvent) => {
+      if (root.current && !root.current.contains(event.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", dismiss);
+    return () => window.removeEventListener("mousedown", dismiss);
+  }, [open]);
+
+  return <div ref={root} className={`${styles.field} ${styles.choiceField}`}>
     <span>{label}</span>
-    <Button
-      variant="text"
-      className={styles.choice}
-      onSelect={() => options.length && onChange(options[(index + 1) % options.length].value)}
-    >
-      {current?.label ?? "-"}<span>+</span>
+    <Button variant="flat" className={styles.choice} aria-label={label} onSelect={() => setOpen(!open)}>
+      {current?.label ?? "-"}<span>{open ? "-" : "+"}</span>
     </Button>
+    {open && <div className={styles.choiceMenu}>
+      {options.map(option => <Button
+        key={String(option.value)}
+        variant="flat"
+        selected={option.value === value}
+        className={`${option.value === value ? styles.choiceSelected : ""} ${option.tone ? styles[`priority${option.tone[0].toUpperCase()}${option.tone.slice(1)}`] : ""}`}
+        onSelect={() => { onChange(option.value); setOpen(false); }}
+      >{option.label}</Button>)}
+    </div>}
   </div>;
 }
 
@@ -40,47 +56,17 @@ export function Segmented<T extends string | number>({ label, value, options, on
   return <div className={styles.segmentField}>
     {label && <span>{label}</span>}
     <div className={styles.segmented}>
-      {options.map(option => <Button
-        key={String(option.value)}
-        variant="flat"
-        selected={option.value === value}
-        className={option.value === value ? styles.segmentActive : ""}
-        onSelect={() => onChange(option.value)}
-      >{option.label}</Button>)}
+      {options.map(option => <Button key={String(option.value)} variant="flat" selected={option.value === value} className={option.value === value ? styles.segmentActive : ""} onSelect={() => onChange(option.value)}>{option.label}</Button>)}
     </div>
   </div>;
 }
 
-export function KindPicker({ value, labels, onChange }: {
-  value: EntryKind;
-  labels: string[];
-  onChange: (value: EntryKind) => void;
-}) {
-  return <Segmented
-    label="Kind"
-    value={value}
-    onChange={next => onChange(next as EntryKind)}
-    options={labels.map((label, next) => ({
-      label: <span className={styles.kindChoice}><KindIcon kind={next as EntryKind}/>{label}</span>,
-      value: next
-    }))}
-  />;
+export function KindPicker({ value, labels, onChange }: { value: EntryKind; labels: string[]; onChange: (value: EntryKind) => void; }) {
+  return <Segmented label="Kind" value={value} onChange={next => onChange(next as EntryKind)} options={labels.map((label, next) => ({ label: <span className={styles.kindChoice}><KindIcon kind={next as EntryKind}/>{label}</span>, value: next }))}/>;
 }
 
-export function StatusPicker({ value, labels, onChange }: {
-  value: EntryStatus;
-  labels: string[];
-  onChange: (value: EntryStatus) => void;
-}) {
-  return <Segmented
-    label="Status"
-    value={value}
-    onChange={next => onChange(next as EntryStatus)}
-    options={labels.map((label, next) => ({
-      label: <span className={styles.statusChoice}><StatusIcon status={next as EntryStatus}/>{label}</span>,
-      value: next
-    }))}
-  />;
+export function StatusPicker({ value, labels, onChange }: { value: EntryStatus; labels: string[]; onChange: (value: EntryStatus) => void; }) {
+  return <Segmented label="Status" value={value} onChange={next => onChange(next as EntryStatus)} options={labels.map((label, next) => ({ label: <span className={styles.statusChoice}><StatusIcon status={next as EntryStatus}/>{label}</span>, value: next }))}/>;
 }
 
 export function CategoryPicker({ value, custom, labels, onChange, onCustom }: {
@@ -92,49 +78,16 @@ export function CategoryPicker({ value, custom, labels, onChange, onCustom }: {
 }) {
   const [open, setOpen] = useState(false);
   const current = custom.trim() || labels[value] || labels[EntryCategory.General];
-
   return <div className={styles.categoryPicker}>
     <span>Category</span>
-    <Button variant="flat" className={styles.categoryTrigger} onSelect={() => setOpen(!open)}>
-      {current}<span>{open ? "-" : "+"}</span>
-    </Button>
+    <Button variant="flat" className={styles.categoryTrigger} onSelect={() => setOpen(!open)}>{current}<span>{open ? "-" : "+"}</span></Button>
     {open && <div className={styles.categoryMenu}>
-      {labels.map((label, category) => <Button
-        key={label}
-        variant="flat"
-        selected={!custom && category === value}
-        onSelect={() => {
-          onChange(category as EntryCategory);
-          onCustom("");
-          setOpen(false);
-        }}
-      >{label}</Button>)}
-      <input
-        type="text"
-        aria-label="Custom category"
-        value={custom}
-        maxLength={40}
-        placeholder="Custom category"
-        onChange={event => {
-          onCustom(event.target.value);
-          onChange(EntryCategory.General);
-        }}
-      />
+      {labels.map((entryLabel, category) => <Button key={entryLabel} variant="flat" selected={!custom && category === value} onSelect={() => { onChange(category as EntryCategory); onCustom(""); setOpen(false); }}>{entryLabel}</Button>)}
+      <input type="text" aria-label="Custom category" value={custom} maxLength={40} placeholder="Custom category" onChange={event => { onCustom(event.target.value); onChange(EntryCategory.General); }}/>
     </div>}
   </div>;
 }
 
-export function Toggle({ label, value, onChange }: {
-  label: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return <Button
-    variant="flat"
-    selected={value}
-    className={styles.toggle}
-    onSelect={() => onChange(!value)}
-  >
-    <span>{value ? "[x]" : "[ ]"}</span>{label}
-  </Button>;
+export function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void; }) {
+  return <Button variant="flat" selected={value} className={styles.toggle} onSelect={() => onChange(!value)}><span>{value ? "[x]" : "[ ]"}</span>{label}</Button>;
 }

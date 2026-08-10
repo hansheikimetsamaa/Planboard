@@ -19,18 +19,18 @@ export function MapNotesOverlay() {
   const markers = useValue(projectedMarkers$) ?? [];
   const { categoryLabels, statusLabels } = usePlanboardLocale();
   const byId = useMemo(() => new Map(entries.map(entry => [entry.id, entry])), [entries]);
-  if ((mode === MapDisplayMode.Hidden && selectedId <= 0) || draftId > 0) return null;
+  if (mode === MapDisplayMode.Hidden || draftId > 0) return null;
 
   return <div className={styles.layer}>{markers.map(marker => {
     const entry = byId.get(marker.id);
-    if (!entry || !marker.visible || (mode === MapDisplayMode.Hidden && entry.id !== selectedId) || (panelVisible && entry.id !== selectedId)) return null;
+    if (!entry || !marker.visible || (panelVisible && entry.id !== selectedId)) return null;
     const category = entry.categoryName || categoryLabels[entry.category] || "General";
     const kindClass = entry.kind === EntryKind.Issue ? styles.issue : entry.kind === EntryKind.Idea ? styles.idea : styles.note;
     const priorityClass = entry.priority === EntryPriority.High ? styles.high : entry.priority === EntryPriority.Medium ? styles.medium : entry.priority === EntryPriority.Low ? styles.low : styles.none;
     const dueDate = ticksToDateInput(deadlineMode === "game" ? entry.gameDueDateTicks : entry.realDueDateTicks);
     const overdue = deadlineMode === "game" ? entry.gameOverdue : entry.realOverdue;
     const dueText = overdue ? "Overdue" : dueDate;
-    const openClass = mode === MapDisplayMode.Notes || entry.id === selectedId ? styles.alwaysOpen : "";
+    const openClass = mode === MapDisplayMode.Notes ? styles.alwaysOpen : "";
     const selectedClass = entry.id === selectedId ? styles.selected : "";
     const doneClass = entry.status === EntryStatus.Done ? styles.done : "";
     const openEntry = () => trigger(Binding.group, Binding.selectEntry, entry.id);

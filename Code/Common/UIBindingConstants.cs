@@ -17,6 +17,8 @@ namespace Planboard.Common
         public const string UndoAvailable = "undoAvailable";
         public const string WindowLayoutRevision = "windowLayoutRevision";
         public const string DeadlineMode = "deadlineMode";
+        public const string CurrentRealDate = "currentRealDate";
+        public const string CurrentGameDate = "currentGameDate";
         public const string DataReadOnly = "dataReadOnly";
         public const string CreateEntry = "createEntry";
         public const string CreatePinnedDraft = "createPinnedDraft";
