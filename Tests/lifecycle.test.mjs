@@ -58,13 +58,12 @@ test("sticky save commits one complete backend transaction", async () => {
   assert.match(ui, /private void CommitDraft\(IJsonReader reader\)/);
 });
 
-test("draft priority remains available before optional details", async () => {
+test("draft priority and description are direct form fields", async () => {
   const draft = await read("../UI/src/components/DraftNotePanel.tsx");
   const priorityIndex = draft.indexOf("className={styles.priority}");
-  const detailsToggleIndex = draft.indexOf("className={styles.detailsToggle}");
-  const detailsBlockIndex = draft.indexOf("{showDetails && <div className={styles.details}>");
-  assert.ok(priorityIndex >= 0 && priorityIndex < detailsToggleIndex);
-  assert.ok(detailsToggleIndex >= 0 && detailsToggleIndex < detailsBlockIndex);
+  const descriptionIndex = draft.indexOf('aria-label="Description"');
+  assert.ok(priorityIndex >= 0 && priorityIndex < descriptionIndex);
+  assert.doesNotMatch(draft, /Add details|showDetails|detailsToggle/);
 });
 test("entry editor identity and pending autosave are protected", async () => {
   const panel = await read("../UI/src/components/MainPanel.tsx");
