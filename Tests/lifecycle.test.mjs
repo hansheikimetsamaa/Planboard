@@ -95,6 +95,11 @@ test("map visibility modes remain authoritative and do not force selected notes 
   assert.match(ui, /private void SetPanelVisible\(bool visible\)\s*\{\s*_panelVisible = visible;\s*if \(!visible\) SelectedEntryId = 0;\s*\}/);
   assert.match(ui, /private void SelectEntry\(int id\)\s*\{\s*if \(id == 0\)\s*\{\s*SelectedEntryId = 0;\s*return;\s*\}/);
 });
+test("map note titles wrap inside their cards", async () => {
+  const styles = await read("../UI/src/components/mapNotesOverlay.module.scss");
+  assert.match(styles, /\.card\{[^}]*box-sizing:border-box/);
+  assert.match(styles, /\.cardHeader strong\{[^}]*min-width:0[^}]*flex:1 1 auto[^}]*overflow-wrap:anywhere/);
+});
 test("main panel retains the restored taller default without overriding manual sizes", async () => {
   const geometry = await read("../UI/src/components/usePanelGeometry.ts");
   assert.match(geometry, /main: \{ width: 650, height: 750/);
