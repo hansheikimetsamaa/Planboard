@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.3 - 2026-08-11
+## 0.1.4 - 2026-08-11
 
 - Restored native terrain, road, and building marker placement using dedicated mod input actions mirrored from current game bindings.
 - Restored calendar, deadline, filters, map modes, autosave, undo, draft flow, and native placement actions.
