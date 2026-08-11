@@ -227,6 +227,7 @@ test("filters use explicit dropdown menus rather than cycling through options", 
   assert.doesNotMatch(controls, /options\[\(index \+ 1\)/);
   assert.match(panel, /tone: value === EntryPriority\.None/);
   assert.match(styles, /\.choiceMenu > button\.priorityHigh/);
+  assert.match(styles, /\.filters\{[^}]*z-index:20[^}]*overflow:visible/);
 });
 
 test("toolbar keeps inactive controls legible while reserving colour for active state", async () => {
