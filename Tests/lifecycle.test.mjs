@@ -174,6 +174,15 @@ test("detail deletion snapshots the latest editor payload before removal", async
   assert.match(ui, /private void DeleteEntry\(IJsonReader reader\)[\s\S]*_data\.UpdateEntry\([\s\S]*_deletedEntry = entry\.Clone\(\)/);
 });
 
+test("overflowing task lists expose an interactive Gameface-safe scrollbar", async () => {
+  const panel = await read("../UI/src/components/MainPanel.tsx");
+  const styles = await read("../UI/src/components/mainPanel.module.scss");
+  assert.match(panel, /function ScrollableTaskList/);
+  assert.match(panel, /metrics\.scrollHeight > metrics\.clientHeight \+ 1/);
+  assert.match(panel, /role="scrollbar"/);
+  assert.match(styles, /\.taskScrollFrame\{[^}]*min-height:0[^}]*flex:1 1 auto/);
+  assert.match(styles, /\.taskScrollbarThumb\{/);
+});
 test("large task lists render in bounded pages", async () => {
   const panel = await read("../UI/src/components/MainPanel.tsx");
   assert.match(panel, /const listPageSize = 200/);

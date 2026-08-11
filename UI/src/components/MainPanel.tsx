@@ -1,6 +1,6 @@
-import { Component, ReactNode, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Component, ReactNode, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ErrorInfo } from "react";
+import type { ErrorInfo, MouseEvent as ReactMouseEvent } from "react";
 import { trigger, useValue } from "cs2/api";
 import { Button, Panel } from "cs2/ui";
 import { currentGameDate$, currentRealDate$, dataIssues$, dataReadOnly$, deadlineMode$, entries$, panelVisible$, placementEntryId$, placementState$, selectedEntryId$, undoAvailable$, windowLayoutRevision$ } from "../bindings";
@@ -17,6 +17,56 @@ const baseFilters: Filters = { query: "", tab: "all", kind: -1, category: -1, st
 const listPageSize = 200;
 type EditorPayload = (string | number)[];
 type PendingDelete = { id: number; payload?: EditorPayload };
+type ScrollMetrics = { clientHeight: number; scrollHeight: number; scrollTop: number };
+
+function ScrollableTaskList({ children }: { children: ReactNode }) {
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const trackRef = useRef<HTMLDivElement>(null);
+    const [metrics, setMetrics] = useState<ScrollMetrics>({ clientHeight: 0, scrollHeight: 0, scrollTop: 0 });
+    const refresh = useCallback(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+        const next = { clientHeight: viewport.clientHeight, scrollHeight: viewport.scrollHeight, scrollTop: viewport.scrollTop };
+        setMetrics(previous => previous.clientHeight === next.clientHeight && previous.scrollHeight === next.scrollHeight && previous.scrollTop === next.scrollTop ? previous : next);
+    }, []);
+    useEffect(() => {
+        refresh();
+        const timer = window.setTimeout(refresh, 0);
+        window.addEventListener("resize", refresh);
+        return () => { window.clearTimeout(timer); window.removeEventListener("resize", refresh); };
+    }, [children, refresh]);
+
+    const overflowing = metrics.scrollHeight > metrics.clientHeight + 1;
+    const thumbHeight = overflowing ? Math.max(24, Math.round(metrics.clientHeight * metrics.clientHeight / metrics.scrollHeight)) : 0;
+    const maximumScroll = Math.max(0, metrics.scrollHeight - metrics.clientHeight);
+    const maximumThumbTop = Math.max(0, metrics.clientHeight - thumbHeight);
+    const thumbTop = maximumScroll > 0 ? Math.round(metrics.scrollTop / maximumScroll * maximumThumbTop) : 0;
+    const scrollFromPointer = (clientY: number) => {
+        const viewport = viewportRef.current;
+        const track = trackRef.current;
+        if (!viewport || !track || maximumScroll === 0) return;
+        const bounds = track.getBoundingClientRect();
+        const position = Math.max(0, Math.min(bounds.height - thumbHeight, clientY - bounds.top - thumbHeight / 2));
+        viewport.scrollTop = position / Math.max(1, bounds.height - thumbHeight) * maximumScroll;
+        refresh();
+    };
+    const beginDrag = (event: ReactMouseEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        event.stopPropagation();
+        scrollFromPointer(event.clientY);
+        const move = (moveEvent: MouseEvent) => scrollFromPointer(moveEvent.clientY);
+        const end = () => { document.removeEventListener("mousemove", move); document.removeEventListener("mouseup", end); };
+        document.addEventListener("mousemove", move);
+        document.addEventListener("mouseup", end);
+    };
+
+    return <div className={styles.taskScrollFrame}>
+      <div ref={viewportRef} className={styles.taskList} onScroll={refresh}>{children}</div>
+      {overflowing && <div ref={trackRef} className={styles.taskScrollbar} onMouseDown={beginDrag} role="scrollbar" aria-label="Task list scrollbar" aria-valuemin={0} aria-valuemax={maximumScroll} aria-valuenow={Math.round(metrics.scrollTop)}>
+        <div className={styles.taskScrollbarThumb} style={{ height: `${thumbHeight}px`, transform: `translateY(${thumbTop}px)` }} onMouseDown={beginDrag}/>
+      </div>}
+    </div>;
+}
 function initialFilters(): Filters { try {
     const saved = JSON.parse(localStorage.getItem("planboard.listPreferences") || "null");
     const savedSort = saved?.sort;
@@ -112,7 +162,7 @@ style={geometry.panelStyle} onMouseUp={geometry.onPanelMouseUp} className={style
   {!selected && !creating && <><div className={styles.listHeader}><div><strong>Map tasks</strong><span>Notes, issues and ideas tied to your city</span></div><input className={styles.searchInput} value={filters.query} aria-label={t("SearchPlaceholder", "Search tasks and notes")} placeholder={t("SearchPlaceholder", "Search tasks and notes")} onChange={event => setFilters({ ...filters, query: event.target.value })}/><Button variant="flat" className={styles.plusButton} title="Create a new item" onSelect={() => setCreating(true)}>+</Button></div>
   <div className={styles.navigation}><div className={styles.tabs}>{(["all", "open", "done"] as const).map(tab => <Button key={tab} variant="flat" selected={filters.tab === tab} className={filters.tab === tab ? styles.active : ""} onSelect={() => setFilters({ ...filters, tab })}><span>{tab === "all" ? "All" : tab === "open" ? "Open" : "Completed"}</span><span>{counts[tab]}</span></Button>)}</div><Button variant="flat" className={styles.filterButton} onSelect={() => setShowFilters(!showFilters)}>Filters {showFilters ? "-" : "+"}</Button></div>
   {categoryNames.length > 0 && <div className={styles.chips}>{categoryNames.map(name => <Button key={name} variant="flat" selected={categoryChip === name} className={categoryChip === name ? styles.chipActive : ""} onSelect={() => setCategoryChip(categoryChip === name ? null : name)}>{name}</Button>)}</div>}{showFilters && <FilterPanel filters={filters} deadlineMode={deadlineMode} onChange={setFilters}/>} {hiddenCreated && <div className={styles.hiddenNotice}>New item is hidden by current filters.<Button variant="flat" onSelect={resetFilters}>Clear filters</Button></div>}
-  <div className={styles.taskList}>{filtered.length ? <>{visibleEntries.map(entry => <EntryRow key={entry.id} entry={entry} category={categoryFor(entry)} kindLabel={kindLabels[entry.kind]} statusLabel={statusLabels[entry.status]} highlighted={entry.id === highlightedId} onOpen={() => { trigger(Binding.group, Binding.selectEntry, entry.id); setDetailId(entry.id); }} onDelete={() => deleteImmediately(entry.id)}/>)}{visibleEntries.length < filtered.length && <Button variant="flat" className={styles.showMore} onSelect={() => setVisibleCount(count => count + listPageSize)}>Show more ({filtered.length - visibleEntries.length} remaining)</Button>}</> : <div className={styles.empty}><strong>No matching tasks</strong><span>Adjust the filters or add something new.</span><Button variant="flat" onSelect={resetFilters}>Clear filters</Button></div>}</div>
+  <ScrollableTaskList>{filtered.length ? <>{visibleEntries.map(entry => <EntryRow key={entry.id} entry={entry} category={categoryFor(entry)} kindLabel={kindLabels[entry.kind]} statusLabel={statusLabels[entry.status]} highlighted={entry.id === highlightedId} onOpen={() => { trigger(Binding.group, Binding.selectEntry, entry.id); setDetailId(entry.id); }} onDelete={() => deleteImmediately(entry.id)}/>)}{visibleEntries.length < filtered.length && <Button variant="flat" className={styles.showMore} onSelect={() => setVisibleCount(count => count + listPageSize)}>Show more ({filtered.length - visibleEntries.length} remaining)</Button>}</> : <div className={styles.empty}><strong>No matching tasks</strong><span>Adjust the filters or add something new.</span><Button variant="flat" onSelect={resetFilters}>Clear filters</Button></div>}</ScrollableTaskList>
   <div className={styles.footer}><Toggle label="Unfinished only" value={filters.unfinishedOnly} onChange={unfinishedOnly => setFilters({ ...filters, unfinishedOnly })}/><Button variant="flat" onSelect={geometry.reset}>Reset window</Button></div></>}
   {creating && <div className={styles.detailView}><NewEditor deadlineMode={deadlineMode} realToday={realToday} gameToday={gameToday} onCancel={() => setCreating(false)} onCreate={create}/></div>}
   {selected && <div className={styles.detailView}><Editor key={selected.id} entry={selected} deadlineMode={deadlineMode} realToday={realToday} gameToday={gameToday} onBack={() => { trigger(Binding.group, Binding.selectEntry, 0); setDetailId(null); }} onDelete={payload => requestDelete(selected.id, payload)}/></div>}
@@ -126,7 +176,7 @@ function ReadOnlyNotice({ issues }: { issues: DataIssueView[] }) {
     return <div className={styles.readOnlyNotice} role="alert"><strong>Planboard data needs a newer compatible version</strong><p>Editing is disabled and Planboard will block saving this city to prevent replacing its data.</p><p>Quit without saving, install the Planboard version that created this city, and load it again. If you must save first, make a backup and verify the game preserves disabled-mod data before disabling Planboard.</p><DataIssuesPanel issues={issues}/></div>;
 }
 function DataIssuesPanel({ issues }: { issues: DataIssueView[] }) {
-    return <div className={styles.dataIssuesPanel}>{issues.map((issue, index) => <div key={`${issue.entryId}-${index}`} className={issue.severity === 1 ? styles.dataIssueError : styles.dataIssueWarning}><strong>{issue.severity === 1 ? "Error" : "Warning"}{issue.entryId > 0 ? ` · Entry #${issue.entryId}` : ""}</strong><span>{issue.message}</span>{issue.severity === 1 && <small>Restore a backup or use a compatible Planboard version before saving.</small>}</div>)}</div>;
+    return <div className={styles.dataIssuesPanel}>{issues.map((issue, index) => <div key={`${issue.entryId}-${index}`} className={issue.severity === 1 ? styles.dataIssueError : styles.dataIssueWarning}><strong>{issue.severity === 1 ? "Error" : "Warning"}{issue.entryId > 0 ? ` Â· Entry #${issue.entryId}` : ""}</strong><span>{issue.message}</span>{issue.severity === 1 && <small>Restore a backup or use a compatible Planboard version before saving.</small>}</div>)}</div>;
 }
 function FilterPanel({ filters: f, deadlineMode, onChange }: {
     filters: Filters;
@@ -198,7 +248,7 @@ function DeadlineCalendar({ deadlineMode, value, currentDate, onChange, overlayH
         <div className={styles.calendarFooter}><span>{context}: {reference}</span><div><Button variant="flat" onSelect={() => { onChange(reference); setOpen(false); }}>{deadlineMode === "game" ? "City today" : "Today"}</Button>{deadlineMode === "game" && <Button variant="flat" onSelect={() => { onChange(addCalendarDays(reference, 7)); setOpen(false); }}>Next week</Button>}<Button variant="flat" onSelect={() => { onChange(""); setOpen(false); }}>Clear</Button></div></div>
       </div>
     </div>, overlayHost.current) : null;
-    return <div className={styles.deadlineCalendar}><span>{label}</span><Button variant="flat" aria-label={label} title={`Set ${label}`} className={styles.deadlineTrigger} onSelect={() => setOpen(!open)}><span className={styles.calendarGlyph} aria-hidden="true"></span><span>{value ? `${deadlineMode === "game" ? "City" : "Real"} · ${value}` : "No deadline"}</span><span>{open ? "-" : "+"}</span></Button>{popup}</div>;
+    return <div className={styles.deadlineCalendar}><span>{label}</span><Button variant="flat" aria-label={label} title={`Set ${label}`} className={styles.deadlineTrigger} onSelect={() => setOpen(!open)}><span className={styles.calendarGlyph} aria-hidden="true"></span><span>{value ? `${deadlineMode === "game" ? "City" : "Real"} Â· ${value}` : "No deadline"}</span><span>{open ? "-" : "+"}</span></Button>{popup}</div>;
 }
 function NewEditor({ deadlineMode, realToday, gameToday, onCancel, onCreate }: {
     deadlineMode: DeadlineMode;
