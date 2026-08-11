@@ -1,6 +1,6 @@
 import { Component, ReactNode, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import type { ErrorInfo, MouseEvent as ReactMouseEvent } from "react";
+import type { ErrorInfo, MouseEvent as ReactMouseEvent, WheelEvent as ReactWheelEvent } from "react";
 import { trigger, useValue } from "cs2/api";
 import { Button, Panel } from "cs2/ui";
 import { currentGameDate$, currentRealDate$, dataIssues$, dataReadOnly$, deadlineMode$, entries$, panelVisible$, placementEntryId$, placementState$, selectedEntryId$, undoAvailable$, windowLayoutRevision$ } from "../bindings";
@@ -60,7 +60,19 @@ function ScrollableTaskList({ children }: { children: ReactNode }) {
         document.addEventListener("mouseup", end);
     };
 
-    return <div className={styles.taskScrollFrame}>
+    const scrollWithWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+        const viewport = viewportRef.current;
+        if (!viewport || maximumScroll === 0 || event.deltaY === 0) return;
+        const unit = event.deltaMode === 1 ? 32 : event.deltaMode === 2 ? viewport.clientHeight : 1;
+        const previous = viewport.scrollTop;
+        viewport.scrollTop = Math.max(0, Math.min(maximumScroll, previous + event.deltaY * unit));
+        if (viewport.scrollTop !== previous) {
+            event.preventDefault();
+            event.stopPropagation();
+            refresh();
+        }
+    };
+    return <div className={styles.taskScrollFrame} onWheel={scrollWithWheel}>
       <div ref={viewportRef} className={styles.taskList} onScroll={refresh}>{children}</div>
       {overflowing && <div ref={trackRef} className={styles.taskScrollbar} onMouseDown={beginDrag} role="scrollbar" aria-label="Task list scrollbar" aria-valuemin={0} aria-valuemax={maximumScroll} aria-valuenow={Math.round(metrics.scrollTop)}>
         <div className={styles.taskScrollbarThumb} style={{ height: `${thumbHeight}px`, transform: `translateY(${thumbTop}px)` }} onMouseDown={beginDrag}/>
@@ -176,7 +188,7 @@ function ReadOnlyNotice({ issues }: { issues: DataIssueView[] }) {
     return <div className={styles.readOnlyNotice} role="alert"><strong>Planboard data needs a newer compatible version</strong><p>Editing is disabled and Planboard will block saving this city to prevent replacing its data.</p><p>Quit without saving, install the Planboard version that created this city, and load it again. If you must save first, make a backup and verify the game preserves disabled-mod data before disabling Planboard.</p><DataIssuesPanel issues={issues}/></div>;
 }
 function DataIssuesPanel({ issues }: { issues: DataIssueView[] }) {
-    return <div className={styles.dataIssuesPanel}>{issues.map((issue, index) => <div key={`${issue.entryId}-${index}`} className={issue.severity === 1 ? styles.dataIssueError : styles.dataIssueWarning}><strong>{issue.severity === 1 ? "Error" : "Warning"}{issue.entryId > 0 ? ` Â· Entry #${issue.entryId}` : ""}</strong><span>{issue.message}</span>{issue.severity === 1 && <small>Restore a backup or use a compatible Planboard version before saving.</small>}</div>)}</div>;
+    return <div className={styles.dataIssuesPanel}>{issues.map((issue, index) => <div key={`${issue.entryId}-${index}`} className={issue.severity === 1 ? styles.dataIssueError : styles.dataIssueWarning}><strong>{issue.severity === 1 ? "Error" : "Warning"}{issue.entryId > 0 ? ` Ã‚Â· Entry #${issue.entryId}` : ""}</strong><span>{issue.message}</span>{issue.severity === 1 && <small>Restore a backup or use a compatible Planboard version before saving.</small>}</div>)}</div>;
 }
 function FilterPanel({ filters: f, deadlineMode, onChange }: {
     filters: Filters;
@@ -248,7 +260,7 @@ function DeadlineCalendar({ deadlineMode, value, currentDate, onChange, overlayH
         <div className={styles.calendarFooter}><span>{context}: {reference}</span><div><Button variant="flat" onSelect={() => { onChange(reference); setOpen(false); }}>{deadlineMode === "game" ? "City today" : "Today"}</Button>{deadlineMode === "game" && <Button variant="flat" onSelect={() => { onChange(addCalendarDays(reference, 7)); setOpen(false); }}>Next week</Button>}<Button variant="flat" onSelect={() => { onChange(""); setOpen(false); }}>Clear</Button></div></div>
       </div>
     </div>, overlayHost.current) : null;
-    return <div className={styles.deadlineCalendar}><span>{label}</span><Button variant="flat" aria-label={label} title={`Set ${label}`} className={styles.deadlineTrigger} onSelect={() => setOpen(!open)}><span className={styles.calendarGlyph} aria-hidden="true"></span><span>{value ? `${deadlineMode === "game" ? "City" : "Real"} Â· ${value}` : "No deadline"}</span><span>{open ? "-" : "+"}</span></Button>{popup}</div>;
+    return <div className={styles.deadlineCalendar}><span>{label}</span><Button variant="flat" aria-label={label} title={`Set ${label}`} className={styles.deadlineTrigger} onSelect={() => setOpen(!open)}><span className={styles.calendarGlyph} aria-hidden="true"></span><span>{value ? `${deadlineMode === "game" ? "City" : "Real"} Ã‚Â· ${value}` : "No deadline"}</span><span>{open ? "-" : "+"}</span></Button>{popup}</div>;
 }
 function NewEditor({ deadlineMode, realToday, gameToday, onCancel, onCreate }: {
     deadlineMode: DeadlineMode;

@@ -180,6 +180,8 @@ test("overflowing task lists expose an interactive Gameface-safe scrollbar", asy
   assert.match(panel, /function ScrollableTaskList/);
   assert.match(panel, /metrics\.scrollHeight > metrics\.clientHeight \+ 1/);
   assert.match(panel, /role="scrollbar"/);
+  assert.match(panel, /onWheel=\{scrollWithWheel\}/);
+  assert.match(panel, /event\.deltaMode === 1 \? 32/);
   assert.match(styles, /\.taskScrollFrame\{[^}]*min-height:0[^}]*flex:1 1 auto/);
   assert.match(styles, /\.taskScrollbarThumb\{/);
 });
