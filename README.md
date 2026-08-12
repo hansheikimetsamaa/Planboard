@@ -20,10 +20,14 @@ Planboard is a location-aware planning mod for Cities: Skylines II. It keeps iss
 
 ### 0.1.4 - 2026-08-11
 
-- Restored terrain, road, and building marker placement, including Create & Place.
-- Restored calendar, deadline, map, autosave, undo, draft, and native placement flows.
-- Replaced cycling filters with dropdowns; improved toolbar and kind-icon contrast.
-- Fixed compact draft sizing and UI text encoding.
+- Added mouse-wheel scrolling and a visible scrollbar to the task list.
+- Let filter menus overlay the list, and refined map-note titles and the draft editor.
+
+### 0.1.3 - 2026-08-11
+
+- Restored native terrain, road, and building marker placement.
+- Restored calendar, deadlines, filters, map modes, autosave, undo, and draft workflows.
+- Replaced cycling filters with dropdown menus and improved toolbar and icon contrast.
 
 ### 0.1.2 - 2026-08-05
 
