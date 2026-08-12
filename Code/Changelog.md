@@ -2,6 +2,12 @@
 
 ## 0.1.4 - 2026-08-11
 
+- Added mouse-wheel scrolling and a visible scrollbar to the task list.
+- Let filter menus overlay the list so their options remain fully usable.
+- Wrapped map-note titles and refined the draft editor to keep priority visible and reduce clutter.
+
+## 0.1.3 - 2026-08-11
+
 - Restored native terrain, road, and building marker placement using dedicated mod input actions mirrored from current game bindings.
 - Restored calendar, deadline, filters, map modes, autosave, undo, draft flow, and native placement actions.
 - Replaced cycling filters with explicit dropdown menus and improved inactive toolbar and kind icon contrast.
