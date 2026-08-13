@@ -18,6 +18,8 @@
 - Improved marker cards so long titles wrap correctly.
 - Reworked icon states for clearer contrast and no hover flicker.
 - Improved settings sections and vanilla tool-binding support.
+- Made task-list menus close cleanly when another menu opens or the background is clicked.
+- Standardised panel spacing, button padding, corner radii, and icon treatment across the interface.
 
 ### Reliability
 

@@ -41,11 +41,13 @@ Planboard has no runtime mod dependencies and supports Cities: Skylines II 1.6.x
 - Improved marker cards so long titles wrap correctly.
 - Reworked icon states for clearer contrast and no hover flicker.
 - Improved settings sections and vanilla tool-binding support.
+- Made task-list menus close cleanly when another menu opens or the background is clicked.
+- Standardised panel spacing, button padding, corner radii, and icon treatment across the interface.
 
 ### Reliability
 
 - Improved save validation and protection for unsupported newer save versions.
 - Added more regression checks and cleaned up formatting, comments, and source structure.</ChangeLog>
   <ExternalLink Type="github" Url="https://github.com/hansheikimetsamaa/Planboard" />
-  <AccessLevel Value="Private" />
+  <AccessLevel Value="Public" />
 </Publish>

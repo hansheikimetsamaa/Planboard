@@ -16,8 +16,8 @@ one place, then attach them to the exact point, road, building, or district you 
 
 ## Availability and feedback
 
-Planboard 0.1.5 is currently in private testing. Feedback, bug reports, and feature ideas are welcome
-through [GitHub Issues](https://github.com/hansheikimetsamaa/Planboard/issues).
+Planboard 0.1.5 is publicly available. Feedback, bug reports, and feature ideas are welcome through
+[GitHub Issues](https://github.com/hansheikimetsamaa/Planboard/issues).
 
 ## Recent releases
 
@@ -26,6 +26,9 @@ through [GitHub Issues](https://github.com/hansheikimetsamaa/Planboard/issues).
 - Added a top-left toolbar option, quick status changes, and clearer filter menus.
 - Improved placement, scrolling, pop-ups, marker cards, icon states, and tool-binding support.
 - Improved save protection, tests, comments, and source formatting.
+- Added a choice between the top-left and footer toolbar locations.
+- Made task list status and more-actions menus close cleanly when another menu opens or the background is clicked.
+- Standardised panel spacing, button padding, corner radii, and icon treatment across the interface.
 
 ### 0.1.4 — 2026-08-11
 
