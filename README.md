@@ -21,21 +21,21 @@ Planboard 0.1.5 is publicly available. Feedback, bug reports, and feature ideas 
 
 ## Recent releases
 
-### 0.1.5 — 2026-08-13
+### 0.1.5 - 2026-08-13
 
-- Added a top-left toolbar option, quick status changes, and clearer filter menus.
-- Improved placement, scrolling, pop-ups, marker cards, icon states, and tool-binding support.
-- Improved save protection, tests, comments, and source formatting.
-- Added a choice between the top-left and footer toolbar locations.
-- Made task list status and more-actions menus close cleanly when another menu opens or the background is clicked.
+- Added a top-left toolbar option, now the default, with the footer toolbar still available in Settings.
+- Added quick status changes and clearer filter menus in the task list.
+- Improved marker placement, scrolling, pop-ups, marker cards, icon states, and vanilla tool-binding support.
+- Made task-list menus close cleanly when another menu opens or the background is clicked.
 - Standardised panel spacing, button padding, corner radii, and icon treatment across the interface.
+- Improved save protection, regression coverage, comments, and source formatting.
 
-### 0.1.4 — 2026-08-11
+### 0.1.4 - 2026-08-11
 
 - Added mouse-wheel scrolling and a visible scrollbar to the task list.
 - Let filter menus overlay the list, and refined map-note titles and the draft editor.
 
-### 0.1.3 — 2026-08-11
+### 0.1.3 - 2026-08-11
 
 - Restored native terrain, road, and building marker placement.
 - Restored calendar, deadlines, filters, map modes, autosave, undo, and draft workflows.

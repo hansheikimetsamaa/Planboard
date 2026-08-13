@@ -6,13 +6,13 @@
 
 - Added a top-left toolbar option, now the default. The footer toolbar remains available in Settings.
 - Added Open, Doing, and Done status filters and quick status changes in the task list.
-- Added clearer filter menus, including “With pin location” and “Only in list”.
+- Added clearer filter menus, including "With pin location" and "Only in list".
 
 ### Improved
 
 - Fixed pin placement and moving on terrain, roads, buildings, and map objects.
-- Placement now uses the game’s normal tool actions; right-click, Escape, and tool switching cancel cleanly.
-- “Create & Place” drafts are only saved after a pin is successfully placed.
+- Placement now uses the game's normal tool actions; right-click, Escape, and tool switching cancel cleanly.
+- "Create & Place" drafts are only saved after a pin is successfully placed.
 - Improved task list scrolling, visible scrollbar, row spacing, status menus, and pop-up behaviour.
 - Improved category and deadline dropdowns in the task editor.
 - Improved marker cards so long titles wrap correctly.
