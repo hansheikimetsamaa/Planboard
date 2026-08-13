@@ -6,6 +6,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
+// Draws the live marker preview while the placement tool is active.
+
 namespace Planboard.Rendering
 {
     public partial class TaskPlacementOverlaySystem : GameSystemBase

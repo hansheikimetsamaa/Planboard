@@ -53,6 +53,7 @@ The official `Mod.targets` post-processes and deploys the native assembly. The `
 
 ## Packaging
 
-1. Update versions, changelog, description, thumbnail, and screenshots.
-2. Run the Release build and the full smoke test with only the packaged output enabled.
-3. Publish with the official toolchain-generated profile.
+1. Update the version, changelog, and description. Keep gallery screenshots in the Paradox Mods listing; do not add them to `PublishConfiguration.xml` for a code-only release.
+2. The official publisher requires a local thumbnail. Keep `Code/Properties/Thumbnail.png` only when it matches the thumbnail already live, or intentionally replace the live thumbnail from the Paradox Mods listing first.
+3. Run the Release build and the full smoke test with only the packaged output enabled.
+4. Publish with the official toolchain-generated profile. Confirm the summary only changes the package and release metadata before submitting it.

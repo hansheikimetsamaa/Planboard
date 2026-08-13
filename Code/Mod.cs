@@ -13,6 +13,8 @@ using Planboard.UI;
 using Unity.Entities;
 using UnityEngine.InputSystem;
 
+// Initializes Planboard and registers its settings, systems, UI, and localization resources.
+
 namespace Planboard
 {
     public sealed class Mod : IMod
@@ -32,7 +34,7 @@ namespace Planboard
             Settings.RegisterKeyBindings();
             Settings.RegisterInOptionsUI();
             AssetDatabase.global.LoadSettings("Planboard", Settings, new Settings(this));
-            Settings.EnablePlacementBindingMirrors();
+            Settings.InitializePlacementBindings();
             GameManager.instance.localizationManager.AddSource("en-US", new LocaleEN(Settings));
 
             _toggleAction = Settings.GetAction(Settings.TogglePanelAction);

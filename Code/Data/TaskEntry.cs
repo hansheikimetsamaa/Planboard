@@ -1,6 +1,8 @@
 using Unity.Entities;
 using Unity.Mathematics;
 
+// Defines the task record and data-issue shapes persisted with each city.
+
 namespace Planboard.Data
 {
     public enum DataIssueSeverity : byte { Warning, Error }

@@ -9,6 +9,8 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Color = UnityEngine.Color;
 
+// Draws lightweight world-space marker overlays for visible Planboard entries.
+
 namespace Planboard.Rendering
 {
     public partial class TaskMarkerOverlaySystem : GameSystemBase

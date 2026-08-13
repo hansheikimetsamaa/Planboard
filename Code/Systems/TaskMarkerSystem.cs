@@ -6,6 +6,8 @@ using Planboard.Data;
 using Unity.Entities;
 using Unity.Mathematics;
 
+// Keeps ECS marker entities synchronized with tasks that have map locations.
+
 namespace Planboard.Systems
 {
     public partial class TaskMarkerSystem : GameSystemBase

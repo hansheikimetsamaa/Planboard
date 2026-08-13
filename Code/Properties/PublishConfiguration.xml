@@ -17,24 +17,35 @@ Planboard is a location-aware planning board for Cities: Skylines II. Create iss
 
 Planboard has no runtime mod dependencies and supports Cities: Skylines II 1.6.x.</LongDescription>
   <Thumbnail Value="Properties/Thumbnail.png" />
-  <Screenshot Value="Properties/Planboard-list.png" />
-  <Screenshot Value="Properties/Planboard-deadline.png" />
+  <!-- Gallery media is managed in the Paradox Mods listing and is intentionally not submitted by code releases. -->
   <Tag Value="Code Mod" />
   <ForumLink Value="" />
-  <ModVersion Value="0.1.4" />
+  <ModVersion Value="0.1.5" />
   <GameVersion Value="1.6.*" />
   <RequiredDLC Value="" />
-  <ChangeLog>## 0.1.4 - 2026-08-11
+  <ChangeLog>## 0.1.5 - 2026-08-13
 
-- Restored native terrain, road, and building marker placement using dedicated mod input actions mirrored from the current game bindings.
-- Restored calendar, deadline, filters, map modes, autosave, undo, draft flow, and native placement actions.
-- Replaced cycling filters with explicit dropdown menus and improved inactive toolbar contrast.
-- Fixed task focus cleanup, placement cancellation, compact draft layout, and corrupted UI text encoding.
+### New
 
-## 0.1.2 - 2026-08-05
+- Added a top-left toolbar option, now the default. The footer toolbar remains available in Settings.
+- Added Open, Doing, and Done status filters and quick status changes in the task list.
+- Added clearer filter menus, including “With pin location” and “Only in list”.
 
-- Changed Planboard defaults to Ctrl+Alt+P and Ctrl+Alt+Shift+P to avoid common mod shortcut conflicts.
-- Fixed CS2 toolchain compatibility when creating runtime marker and navigation entities.</ChangeLog>
+### Improved
+
+- Fixed pin placement and moving on terrain, roads, buildings, and map objects.
+- Placement now uses the game's normal tool actions; right-click, Escape, and tool switching cancel cleanly.
+- “Create &amp; Place” drafts are only saved after a pin is successfully placed.
+- Improved task list scrolling, visible scrollbar, row spacing, status menus, and pop-up behaviour.
+- Improved category and deadline dropdowns in the task editor.
+- Improved marker cards so long titles wrap correctly.
+- Reworked icon states for clearer contrast and no hover flicker.
+- Improved settings sections and vanilla tool-binding support.
+
+### Reliability
+
+- Improved save validation and protection for unsupported newer save versions.
+- Added more regression checks and cleaned up formatting, comments, and source structure.</ChangeLog>
   <ExternalLink Type="github" Url="https://github.com/hansheikimetsamaa/Planboard" />
   <AccessLevel Value="Private" />
 </Publish>

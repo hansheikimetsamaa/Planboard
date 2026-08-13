@@ -1,21 +1,290 @@
-.layer{position:absolute;left:0;top:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden}
-.anchor{position:absolute;width:28rem;height:28rem;transform:translate(-50%,-50%);pointer-events:none}
-.marker{position:absolute;left:0;top:0;width:28rem;height:28rem;min-width:28rem;display:flex;align-items:center;justify-content:center;padding:0;background-color:rgba(18,31,39,.98);border-width:2rem;border-style:solid;border-color:rgba(112,132,142,.8);border-radius:14rem;pointer-events:auto;overflow:visible}
-.marker:hover{width:30rem;height:30rem;left:-1rem;top:-1rem;background-color:rgba(27,44,54,.99)}
-.markerIcon{width:18rem;height:18rem;display:block;flex:0 0 18rem;margin:0;object-fit:contain}
-.marker.none{border-color:rgba(132,151,160,.72)}.marker.low{border-color:#64d9a4}.marker.medium{border-color:#f2c25d}.marker.high{border-color:#ff7882}
-.badge{position:absolute;right:-4rem;top:-4rem;width:13rem;height:13rem;display:flex;align-items:center;justify-content:center;color:#fff;background-color:#ef5965;border-radius:7rem;font-size:8rem;font-weight:750}
-.card{display:none;position:absolute;left:50%;bottom:34rem;width:186rem;min-height:54rem;padding:10rem 12rem;box-sizing:border-box;color:#eaf2f6;background-color:rgba(17,29,37,.98);border-width:1rem;border-style:solid;border-color:rgba(153,181,194,.22);border-radius:10rem;transform:translateX(-50%);pointer-events:auto;text-align:left;box-shadow:0 8rem 24rem rgba(0,0,0,.28)}
-.anchor:hover .card,.alwaysOpen .card{display:flex;flex-direction:column}
-.card:hover{background-color:rgba(24,39,48,.99);border-color:rgba(100,213,245,.38)}
-.cardHeader{min-width:0;display:flex;align-items:flex-start}
-.cardKind{width:19rem;height:19rem;flex:0 0 19rem;display:flex;align-items:center;justify-content:center;margin-right:6rem;background-color:rgba(255,255,255,.06);border-radius:5rem}
-.cardKind img{width:14rem;height:14rem;display:block}
-.cardHeader strong{min-width:0;flex:1 1 auto;max-height:32rem;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;color:#edf4f7;font-size:11rem;font-weight:600;line-height:1.35}
-.meta{min-width:0;display:flex;align-items:center;margin-top:6rem;padding-left:25rem;color:rgba(184,204,213,.68);font-size:8rem;white-space:nowrap;overflow:hidden}
-.meta>*{margin-right:5rem;overflow:hidden;text-overflow:ellipsis}.meta>*:last-child{margin-right:0}.due{color:#efc86d}.overdue{color:#ff8a91}
-.tail{display:none;position:absolute;left:8rem;bottom:26rem;width:0;height:0;border-left-width:6rem;border-left-style:solid;border-left-color:transparent;border-right-width:6rem;border-right-style:solid;border-right-color:transparent;border-top-width:7rem;border-top-style:solid;border-top-color:rgba(17,29,37,.98)}
-.anchor:hover .tail,.alwaysOpen .tail{display:block}.done{opacity:.58}.done .cardHeader strong{text-decoration:line-through}.card.none{background-color:rgba(17,29,37,.98);border-color:rgba(153,181,194,.22)}.card.low{background-color:rgba(18,38,34,.97);border-color:rgba(100,217,164,.38)}.card.medium{background-color:rgba(42,35,23,.97);border-color:rgba(240,182,93,.42)}.card.high{background-color:rgba(45,26,30,.97);border-color:rgba(255,125,134,.46)}.card.low:hover{background-color:rgba(22,48,41,.99)}.card.medium:hover{background-color:rgba(53,43,27,.99)}.card.high:hover{background-color:rgba(57,31,36,.99)}.anchor.low .tail{border-top-color:rgba(18,38,34,.97)}.anchor.medium .tail{border-top-color:rgba(42,35,23,.97)}.anchor.high .tail{border-top-color:rgba(45,26,30,.97)}
-.statusMeta{display:flex;align-items:center}.statusMeta img{width:10rem;height:10rem;margin-right:3rem}
+@use "../styles/interaction" as interaction;
+@use "../styles/tokens" as tokens;
 
-.selected .marker{box-shadow:0 0 0 3rem rgba(94,207,245,.2),0 0 16rem rgba(94,207,245,.55);border-color:#5ecff5}.selected .card{border-color:rgba(94,207,245,.62);box-shadow:0 8rem 24rem rgba(0,0,0,.36),0 0 18rem rgba(94,207,245,.18)}
+.layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.anchor {
+  position: absolute;
+  width: 28rem;
+  height: 28rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28rem;
+  height: 28rem;
+  min-width: 28rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background-color: rgba(18, 31, 39, 0.98);
+  border-width: 2rem;
+  border-style: solid;
+  border-color: rgba(112, 132, 142, 0.8);
+  border-radius: tokens.$radius-circle;
+  pointer-events: auto;
+  overflow: visible;
+}
+.marker:hover {
+  width: 30rem;
+  height: 30rem;
+  left: -1rem;
+  top: -1rem;
+  background-color: rgba(27, 44, 54, 0.99);
+}
+.markerIcon {
+  width: 18rem;
+  height: 18rem;
+  display: block;
+  flex: 0 0 18rem;
+  margin: 0;
+  object-fit: contain;
+}
+.marker.none {
+  border-color: rgba(132, 151, 160, 0.72);
+}
+.marker.low {
+  border-color: #64d9a4;
+}
+.marker.medium {
+  border-color: #f2c25d;
+}
+.marker.high {
+  border-color: #ff7882;
+}
+.badge {
+  position: absolute;
+  right: -4rem;
+  top: -4rem;
+  width: 13rem;
+  height: 13rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background-color: #ef5965;
+  border-radius: tokens.$radius-circle;
+  font-size: 8rem;
+  font-weight: 750;
+}
+.card {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 34rem;
+  width: 186rem;
+  min-height: 54rem;
+  padding: 10rem 12rem;
+  box-sizing: border-box;
+  color: #eaf2f6;
+  background-color: rgba(17, 29, 37, 0.98);
+  border-width: 1rem;
+  border-style: solid;
+  border-color: rgba(153, 181, 194, 0.22);
+  border-radius: tokens.$radius-card;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  text-align: left;
+  box-shadow: 0 8rem 24rem rgba(0, 0, 0, 0.28);
+}
+.anchor:hover .card,
+.alwaysOpen .card {
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  background-color: rgba(24, 39, 48, 0.99);
+  border-color: rgba(100, 213, 245, 0.38);
+}
+.cardHeader {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+}
+.cardKind {
+  width: 19rem;
+  height: 19rem;
+  flex: 0 0 19rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6rem;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: tokens.$radius-compact;
+}
+.cardKind img {
+  width: 14rem;
+  height: 14rem;
+  display: block;
+}
+.cardHeader strong {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-height: 32rem;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #edf4f7;
+  font-size: 11rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.meta {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  margin-top: 6rem;
+  padding-left: 25rem;
+  color: rgba(184, 204, 213, 0.68);
+  font-size: 8rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.meta > * {
+  margin-right: 5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.meta > *:last-child {
+  margin-right: 0;
+}
+.due {
+  color: #efc86d;
+}
+.overdue {
+  color: #ff8a91;
+}
+.tail {
+  display: none;
+  position: absolute;
+  left: 8rem;
+  bottom: 26rem;
+  width: 0;
+  height: 0;
+  border-left-width: 6rem;
+  border-left-style: solid;
+  border-left-color: transparent;
+  border-right-width: 6rem;
+  border-right-style: solid;
+  border-right-color: transparent;
+  border-top-width: 7rem;
+  border-top-style: solid;
+  border-top-color: rgba(17, 29, 37, 0.98);
+}
+.anchor:hover .tail,
+.alwaysOpen .tail {
+  display: block;
+}
+.done {
+  opacity: 0.58;
+}
+.done .cardHeader strong {
+  text-decoration: line-through;
+}
+.card.none {
+  background-color: rgba(17, 29, 37, 0.98);
+  border-color: rgba(153, 181, 194, 0.22);
+}
+.card.low {
+  background-color: rgba(18, 38, 34, 0.97);
+  border-color: rgba(100, 217, 164, 0.38);
+}
+.card.medium {
+  background-color: rgba(42, 35, 23, 0.97);
+  border-color: rgba(240, 182, 93, 0.42);
+}
+.card.high {
+  background-color: rgba(45, 26, 30, 0.97);
+  border-color: rgba(255, 125, 134, 0.46);
+}
+.card.low:hover {
+  background-color: rgba(22, 48, 41, 0.99);
+}
+.card.medium:hover {
+  background-color: rgba(53, 43, 27, 0.99);
+}
+.card.high:hover {
+  background-color: rgba(57, 31, 36, 0.99);
+}
+.anchor.low .tail {
+  border-top-color: rgba(18, 38, 34, 0.97);
+}
+.anchor.medium .tail {
+  border-top-color: rgba(42, 35, 23, 0.97);
+}
+.anchor.high .tail {
+  border-top-color: rgba(45, 26, 30, 0.97);
+}
+.statusMeta {
+  display: flex;
+  align-items: center;
+}
+.statusMeta img {
+  width: 10rem;
+  height: 10rem;
+  margin-right: 3rem;
+}
+
+.selected .marker {
+  box-shadow:
+    0 0 0 3rem rgba(94, 207, 245, 0.2),
+    0 0 16rem rgba(94, 207, 245, 0.55);
+  border-color: #5ecff5;
+}
+.selected .card {
+  border-color: rgba(94, 207, 245, 0.62);
+  box-shadow:
+    0 8rem 24rem rgba(0, 0, 0, 0.36),
+    0 0 18rem rgba(94, 207, 245, 0.18);
+}
+
+// Map markers and cards use the same focus and hover cues as panel controls.
+.marker,
+.card {
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+}
+.marker:focus,
+.card:focus {
+  outline: 0;
+  border-color: interaction.$focus-ring;
+  box-shadow:
+    0 0 0 2rem rgba(94, 207, 245, 0.35),
+    0 8rem 24rem rgba(0, 0, 0, 0.34);
+}
+.marker:hover {
+  box-shadow:
+    0 0 0 2rem rgba(94, 207, 245, 0.2),
+    0 6rem 15rem rgba(0, 0, 0, 0.3);
+}
+.markerIcon,
+.statusMeta img {
+  opacity: 1;
+}
+.cardKind img {
+  opacity: 0.9;
+}
+.cardKind.issue {
+  background-color: rgba(255, 125, 134, 0.2);
+}
+.cardKind.note {
+  background-color: rgba(100, 217, 164, 0.2);
+}
+.cardKind.idea {
+  background-color: rgba(240, 182, 93, 0.2);
+}

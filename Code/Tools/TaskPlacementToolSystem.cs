@@ -9,6 +9,8 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
+// Provides the native terrain, network, and building placement workflow for task markers.
+
 namespace Planboard.Tools
 {
     public partial class TaskPlacementToolSystem : ToolBaseSystem
@@ -41,6 +43,7 @@ namespace Planboard.Tools
         {
             if (_data.Find(entryId) == null) return false;
             if (EntryId > 0 && EntryId != entryId) return false;
+
             EntryId = entryId;
             State = PlacementState.ChoosingLocation;
             PreviewEntity = Entity.Null;
@@ -74,7 +77,11 @@ namespace Planboard.Tools
             base.OnStopRunning();
             SetActionEnabled(_applyPlacementAction, false);
             SetActionEnabled(_cancelPlacementAction, false);
-            bool interruptedPlacement = EntryId > 0 && State != PlacementState.Applied && State != PlacementState.Cancelled;
+            // Switching tools removes the raycast context. Treat that as cancellation instead
+            // of applying the last preview, which may no longer describe the active tool target.
+            bool interruptedPlacement = EntryId > 0
+                && State != PlacementState.Applied
+                && State != PlacementState.Cancelled;
             PreviewEntity = Entity.Null;
             PreviewPosition = default;
             if (interruptedPlacement)
@@ -97,16 +104,22 @@ namespace Planboard.Tools
             }
             catch (Exception exception)
             {
-                Mod.Log.Warn($"Placement input action could not be {(enabled ? "enabled" : "disabled")}: {exception.Message}");
+                Mod.Log.Warn(
+                    $"Placement input action could not be {(enabled ? "enabled" : "disabled")}: {exception.Message}"
+                );
             }
         }
 
         public override void InitializeRaycast()
         {
             base.InitializeRaycast();
+            // Markers can belong to free terrain, networks, or static buildings. Restricting
+            // the mask to those surfaces keeps placement aligned with visible city objects.
             m_ToolRaycastSystem.typeMask = TypeMask.Terrain | TypeMask.Net | TypeMask.StaticObjects;
             m_ToolRaycastSystem.collisionMask = CollisionMask.OnGround | CollisionMask.Overground;
-            m_ToolRaycastSystem.raycastFlags = RaycastFlags.SubElements | RaycastFlags.Cargo | RaycastFlags.Passenger;
+            m_ToolRaycastSystem.raycastFlags = RaycastFlags.SubElements
+                | RaycastFlags.Cargo
+                | RaycastFlags.Passenger;
             m_ToolRaycastSystem.netLayerMask = Layer.Road
                 | Layer.TrainTrack
                 | Layer.TramTrack
@@ -125,8 +138,13 @@ namespace Planboard.Tools
                 m_FocusChanged = false;
             }
 
-            bool uiDisabled = (m_ToolRaycastSystem.raycastFlags & (RaycastFlags.DebugDisable | RaycastFlags.UIDisable)) != 0;
-            if (_cancelPlacementAction.WasPressedThisFrame() || cancelAction.WasPressedThisFrame() || secondaryApplyAction.WasPressedThisFrame())
+            bool uiDisabled = (m_ToolRaycastSystem.raycastFlags
+                & (RaycastFlags.DebugDisable | RaycastFlags.UIDisable)) != 0;
+            if (
+                _cancelPlacementAction.WasPressedThisFrame()
+                || cancelAction.WasPressedThisFrame()
+                || secondaryApplyAction.WasPressedThisFrame()
+            )
             {
                 CancelPlacement();
                 return inputDeps;
@@ -143,7 +161,9 @@ namespace Planboard.Tools
             {
                 PreviewPosition = point.m_HitPosition;
                 PreviewEntity = point.m_OriginalEntity;
-                State = math.all(math.isfinite(PreviewPosition)) ? PlacementState.ValidPreview : PlacementState.InvalidPreview;
+                State = math.all(math.isfinite(PreviewPosition))
+                    ? PlacementState.ValidPreview
+                    : PlacementState.InvalidPreview;
             }
             else
             {
@@ -153,10 +173,15 @@ namespace Planboard.Tools
 
             if (_applyPlacementAction.WasPressedThisFrame() && State == PlacementState.ValidPreview)
             {
-                Entity district = PreviewEntity != Entity.Null && EntityManager.HasComponent<Game.Areas.District>(PreviewEntity)
+                // A valid preview is only a visual candidate. Persist the location after the
+                // explicit apply action succeeds, then return control to the default tool.
+                Entity district = PreviewEntity != Entity.Null
+                    && EntityManager.HasComponent<Game.Areas.District>(PreviewEntity)
                     ? PreviewEntity
                     : Entity.Null;
-                Entity linked = PreviewEntity != Entity.Null && EntityManager.Exists(PreviewEntity) ? PreviewEntity : Entity.Null;
+                Entity linked = PreviewEntity != Entity.Null && EntityManager.Exists(PreviewEntity)
+                    ? PreviewEntity
+                    : Entity.Null;
                 bool moved = _data.Find(EntryId)?.HasLocation == true;
                 if (_data.SetLocation(EntryId, PreviewPosition, linked, district, moved))
                 {

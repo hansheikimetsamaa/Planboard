@@ -1,3 +1,5 @@
+// Defines the stable binding names shared by the native mod and Gameface UI.
+
 namespace Planboard.Common
 {
     public static class UIBindingConstants
@@ -17,6 +19,7 @@ namespace Planboard.Common
         public const string UndoAvailable = "undoAvailable";
         public const string WindowLayoutRevision = "windowLayoutRevision";
         public const string DeadlineMode = "deadlineMode";
+        public const string ToolbarLocation = "toolbarLocation";
         public const string CurrentRealDate = "currentRealDate";
         public const string CurrentGameDate = "currentGameDate";
         public const string DataReadOnly = "dataReadOnly";

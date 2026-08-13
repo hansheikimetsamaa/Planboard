@@ -21,4 +21,6 @@ jobs:
           cache-dependency-path: UI/package-lock.json
       - run: npm ci
         working-directory: UI
+      - run: dotnet restore Planboard.sln
+      - run: dotnet format Planboard.sln --verify-no-changes --no-restore
       - run: dotnet build Planboard.sln -c Release --no-restore

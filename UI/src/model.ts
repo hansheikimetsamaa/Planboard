@@ -1,3 +1,5 @@
+// Contains pure filtering, sorting, and date-conversion helpers for task views.
+
 import type { DeadlineMode, EntryView, Filters } from "./types/contracts";
 
 const dotNetEpochTicks = 621355968000000000n;
@@ -11,10 +13,12 @@ export function isValidDateInput(value: string): boolean {
   const day = Number(match[3]);
   if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
-  return Number.isFinite(parsed.getTime()) &&
+  return (
+    Number.isFinite(parsed.getTime()) &&
     parsed.getUTCFullYear() === year &&
     parsed.getUTCMonth() + 1 === month &&
-    parsed.getUTCDate() === day;
+    parsed.getUTCDate() === day
+  );
 }
 
 export function dateInputToTicks(value: string): string {
@@ -34,10 +38,15 @@ export function ticksToDateInput(value: string): string {
   }
 }
 
-export function filterAndSort(entries: EntryView[], filters: Filters, deadlineMode: DeadlineMode = "real"): EntryView[] {
+export function filterAndSort(
+  entries: EntryView[],
+  filters: Filters,
+  deadlineMode: DeadlineMode = "real",
+): EntryView[] {
   const query = filters.query.trim().toLocaleLowerCase();
   const result = entries.filter((entry) => {
-    if (filters.tab === "open" && entry.status === 2) return false;
+    if (filters.tab === "open" && entry.status !== 0) return false;
+    if (filters.tab === "doing" && entry.status !== 1) return false;
     if (filters.tab === "done" && entry.status !== 2) return false;
     if (filters.unfinishedOnly && entry.status === 2) return false;
     if (filters.kind >= 0 && entry.kind !== filters.kind) return false;
@@ -47,16 +56,31 @@ export function filterAndSort(entries: EntryView[], filters: Filters, deadlineMo
     if (filters.location === "located" && !entry.hasLocation) return false;
     if (filters.location === "list" && entry.hasLocation) return false;
     if (filters.missingLinksOnly && entry.linkState !== 2) return false;
-    if (filters.overdueOnly && !(deadlineMode === "game" ? entry.gameOverdue : entry.realOverdue)) return false;
-    return !query || entry.title.toLocaleLowerCase().includes(query) || entry.description.toLocaleLowerCase().includes(query) || (entry.categoryName || "").toLocaleLowerCase().includes(query);
+    if (filters.overdueOnly && !(deadlineMode === "game" ? entry.gameOverdue : entry.realOverdue))
+      return false;
+    return (
+      !query ||
+      entry.title.toLocaleLowerCase().includes(query) ||
+      entry.description.toLocaleLowerCase().includes(query) ||
+      (entry.categoryName || "").toLocaleLowerCase().includes(query)
+    );
   });
 
   return result.sort((a, b) => {
     switch (filters.sort) {
-      case "priority": return b.priority - a.priority || Number(BigInt(b.updatedUtcTicks) - BigInt(a.updatedUtcTicks));
-      case "category": return a.category - b.category || a.title.localeCompare(b.title);
-      case "deadline": return dueSort(deadlineMode === "game" ? a.gameDueDateTicks : a.realDueDateTicks, deadlineMode === "game" ? b.gameDueDateTicks : b.realDueDateTicks);
-      default: return compareTicksDesc(a.updatedUtcTicks, b.updatedUtcTicks);
+      case "priority":
+        return (
+          b.priority - a.priority || Number(BigInt(b.updatedUtcTicks) - BigInt(a.updatedUtcTicks))
+        );
+      case "category":
+        return a.category - b.category || a.title.localeCompare(b.title);
+      case "deadline":
+        return dueSort(
+          deadlineMode === "game" ? a.gameDueDateTicks : a.realDueDateTicks,
+          deadlineMode === "game" ? b.gameDueDateTicks : b.realDueDateTicks,
+        );
+      default:
+        return compareTicksDesc(a.updatedUtcTicks, b.updatedUtcTicks);
     }
   });
 }

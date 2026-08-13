@@ -5,14 +5,21 @@
     <RootNamespace>Planboard</RootNamespace>
     <Configurations>Debug;Release</Configurations>
     <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
-    <Version>0.1.4</Version>
-    <AssemblyVersion>0.1.4.0</AssemblyVersion>
-    <FileVersion>0.1.4.0</FileVersion>
+    <Version>0.1.5</Version>
+    <AssemblyVersion>0.1.5.0</AssemblyVersion>
+    <FileVersion>0.1.5.0</FileVersion>
     <LangVersion>9</LangVersion>
   </PropertyGroup>
 
-  <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.props" />
-  <Import Project="$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))\Mod.targets" />
+  <PropertyGroup>
+    <!-- The official toolchain stores this at user scope; the process fallback
+         also supports CI and terminals launched before Windows refreshes it. -->
+    <PlanboardToolchainPath>$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.User'))</PlanboardToolchainPath>
+    <PlanboardToolchainPath Condition="'$(PlanboardToolchainPath)' == ''">$([System.Environment]::GetEnvironmentVariable('CSII_TOOLPATH', 'EnvironmentVariableTarget.Process'))</PlanboardToolchainPath>
+  </PropertyGroup>
+
+  <Import Project="$(PlanboardToolchainPath)\Mod.props" />
+  <Import Project="$(PlanboardToolchainPath)\Mod.targets" />
 
   <ItemGroup>
     <Reference Include="Game"><Private>false</Private></Reference>

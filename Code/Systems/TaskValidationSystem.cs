@@ -1,5 +1,7 @@
 using Game;
 
+// Runs deferred post-load validation once entity references are available.
+
 namespace Planboard.Systems
 {
     public partial class TaskValidationSystem : GameSystemBase

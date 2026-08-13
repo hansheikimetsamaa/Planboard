@@ -1,3 +1,5 @@
+// Defines the typed data and binding contract shared by the native and UI layers.
+
 export const Binding = {
   group: "planboard",
   entries: "entries",
@@ -14,6 +16,7 @@ export const Binding = {
   undoAvailable: "undoAvailable",
   windowLayoutRevision: "windowLayoutRevision",
   deadlineMode: "deadlineMode",
+  toolbarLocation: "toolbarLocation",
   currentRealDate: "currentRealDate",
   currentGameDate: "currentGameDate",
   dataReadOnly: "dataReadOnly",
@@ -34,16 +37,49 @@ export const Binding = {
   navigateToEntry: "navigateToEntry",
   setPanelVisible: "setPanelVisible",
   cycleMapDisplayMode: "cycleMapDisplayMode",
-  undoDelete: "undoDelete"
+  undoDelete: "undoDelete",
 } as const;
 
-export enum EntryKind { Issue, Task, Idea }
-export enum EntryStatus { Open, Doing, Done }
-export enum EntryPriority { None, Low, Medium, High }
-export enum SpatialKind { None, Point, Line, Area }
-export enum LinkState { Unlinked, Valid, Missing }
-export enum PlacementState { Inactive, ChoosingLocation, ValidPreview, InvalidPreview, Applied, Cancelled }
-export enum MapDisplayMode { Hidden, Pins, Notes }
+export enum EntryKind {
+  Issue,
+  Task,
+  Idea,
+}
+export enum EntryStatus {
+  Open,
+  Doing,
+  Done,
+}
+export enum EntryPriority {
+  None,
+  Low,
+  Medium,
+  High,
+}
+export enum SpatialKind {
+  None,
+  Point,
+  Line,
+  Area,
+}
+export enum LinkState {
+  Unlinked,
+  Valid,
+  Missing,
+}
+export enum PlacementState {
+  Inactive,
+  ChoosingLocation,
+  ValidPreview,
+  InvalidPreview,
+  Applied,
+  Cancelled,
+}
+export enum MapDisplayMode {
+  Hidden,
+  Pins,
+  Notes,
+}
 export enum EntryCategory {
   Traffic,
   Roads,
@@ -54,7 +90,7 @@ export enum EntryCategory {
   Utilities,
   ParksPublicSpace,
   FutureProject,
-  General
+  General,
 }
 
 export interface EntryView {
@@ -88,8 +124,9 @@ export interface DataIssueView {
   message: string;
 }
 
-export type MainTab = "all" | "open" | "done";
+export type MainTab = "all" | "open" | "doing" | "done";
 export type DeadlineMode = "real" | "game";
+export type ToolbarLocation = "topLeft" | "footer";
 export type SortMode = "updated" | "priority" | "category" | "deadline";
 
 export interface Filters {
@@ -105,7 +142,6 @@ export interface Filters {
   unfinishedOnly: boolean;
   sort: SortMode;
 }
-
 
 export interface ProjectedMarkerView {
   id: number;

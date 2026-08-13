@@ -1,0 +1,54 @@
+// Shared visual vocabulary for every Planboard panel and compact dialog.
+
+$panel-background: rgba(10, 23, 32, 0.96);
+$panel-footer-background: rgba(10, 23, 32, 0.99);
+$surface: rgba(255, 255, 255, 0.045);
+$hover: rgba(255, 255, 255, 0.085);
+$line: rgba(196, 226, 238, 0.15);
+$text: #f4f9fc;
+$muted: rgba(220, 237, 245, 0.58);
+$accent: #5ecff5;
+$green: #64d9a4;
+$amber: #f0b65d;
+$red: #ff7d86;
+
+$font-meta: 9rem;
+$font-control: 10rem;
+$font-body: 12rem;
+$font-panel-title: 15rem;
+$action-height: 28rem;
+$action-min-width: 68rem;
+$compact-action-inset: 8rem;
+
+// Radius scale: compact controls sit inside fields, fields sit inside cards.
+// Keeping this small prevents each component from inventing a near-identical corner shape.
+// Interactive rectangular surfaces share one approachable, not over-rounded corner.
+// Compact actions use the same value so a button beside a field never looks sharper.
+$radius-micro: 3rem;
+$radius-control: 8rem;
+$radius-compact: $radius-control;
+$radius-card: 12rem;
+$radius-circle: 50%;
+$radius-pill: 999rem;
+
+// Detail editors align all content to one horizontal gutter.
+$editor-gutter: 15rem;
+
+@mixin action-button {
+  min-width: $action-min-width;
+  height: $action-height;
+  padding: 0 10rem;
+  border-radius: $radius-compact;
+  font-size: $font-control;
+  font-weight: 550;
+}
+
+// Text actions always need a visible horizontal buffer. Icon-only actions use
+// their own square hit target instead of this mixin.
+@mixin compact-text-action {
+  min-height: $action-height;
+  padding-left: $compact-action-inset;
+  padding-right: $compact-action-inset;
+  border-radius: $radius-compact;
+  white-space: nowrap;
+}

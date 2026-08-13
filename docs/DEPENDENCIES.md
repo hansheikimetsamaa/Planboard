@@ -32,11 +32,11 @@ The linked `AlphaGaming7780/ExtraAssetsImporter` repository and the local `Extra
 
 ## Packaging matrix
 
-| Mod | Relationship | Paradox dependency |
-| --- | --- | --- |
-| Unified Icon Library | Optional reference; bundled Planboard icons preferred | None |
-| I18n Everywhere | Optional community-translation compatibility | None |
-| Anarchy | Compatibility-test companion | None |
-| ExtraLib / Extra Assets Importer | No integration | None |
+| Mod                              | Relationship                                          | Paradox dependency |
+| -------------------------------- | ----------------------------------------------------- | ------------------ |
+| Unified Icon Library             | Optional reference; bundled Planboard icons preferred | None               |
+| I18n Everywhere                  | Optional community-translation compatibility          | None               |
+| Anarchy                          | Compatibility-test companion                          | None               |
+| ExtraLib / Extra Assets Importer | No integration                                        | None               |
 
 Before changing this matrix, require a concrete player-facing benefit that cannot be implemented safely with current game APIs. Any hard dependency must appear in both the Paradox publish configuration and the player documentation, and Planboard must fail clearly if that dependency is unavailable.

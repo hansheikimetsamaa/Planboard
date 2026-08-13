@@ -7,6 +7,8 @@ using Planboard.Data;
 using Unity.Entities;
 using Unity.Mathematics;
 
+// Owns task records, validation, and durable serialization for a single city save.
+
 namespace Planboard.Systems
 {
     public partial class TaskDataSystem : GameSystemBase, IDefaultSerializable
@@ -62,6 +64,8 @@ namespace Planboard.Systems
                 UpdatedUtcTicks = now,
             };
             _entries.Add(entry);
+            // Create & Place uses a transient entry until a marker is confirmed. Transient
+            // entries stay in memory but are deliberately excluded from serialized saves.
             if (transient) _transientEntryIds.Add(entry.Id);
             Touch();
             return entry.Id;
@@ -194,6 +198,8 @@ namespace Planboard.Systems
 
         internal void ValidateLoadedData(EntityManager entityManager)
         {
+            // Validation repairs recoverable legacy or malformed values and reports every
+            // repair to the UI. Unsupported versions are handled read-only instead.
             if (IsReadOnly)
             {
                 _pendingValidation = false;
@@ -309,6 +315,7 @@ namespace Planboard.Systems
 
             writer.Write(CurrentFormatVersion);
             writer.Write(_nextId);
+            // A cancelled Create & Place flow must never survive a save/reload cycle.
             int persistentCount = _entries.Count(entry => !_transientEntryIds.Contains(entry.Id));
             writer.Write(persistentCount);
             foreach (TaskEntry entry in _entries.Where(entry => !_transientEntryIds.Contains(entry.Id)))
@@ -344,8 +351,14 @@ namespace Planboard.Systems
             reader.Read(out int version);
             if (version < 1 || version > CurrentFormatVersion)
             {
+                // Never rewrite data from a newer format as an empty or partial V2 save.
+                // The UI exposes the issue while keeping the loaded data read-only.
                 _unsupportedFormatVersion = version;
-                AddIssue(DataIssueSeverity.Error, 0, $"Planboard data version {version} is unsupported by this release. Editing and saving are blocked to protect the data.");
+                AddIssue(
+                    DataIssueSeverity.Error,
+                    0,
+                    $"Planboard data version {version} is unsupported by this release. " +
+                    "Editing and saving are blocked to protect the data.");
                 _pendingValidation = false;
                 Touch();
                 return;

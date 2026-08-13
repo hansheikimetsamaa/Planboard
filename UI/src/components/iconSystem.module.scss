@@ -1,0 +1,22 @@
+// Shared visual treatment for semantic task/status images across Planboard surfaces.
+
+// Icons use authored SVG colours; hover changes opacity only so Gameface can reuse the same surface.
+// Cyan identifies interaction state, so Note keeps a green identity tile while its glyph stays cyan.
+.icon {
+  display: block;
+  object-fit: contain;
+  opacity: 0.9;
+  pointer-events: none;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: opacity 0.12s ease;
+}
+
+.onLight {
+  opacity: 1;
+}
+
+button:hover .icon,
+button:focus .icon {
+  opacity: 1;
+}

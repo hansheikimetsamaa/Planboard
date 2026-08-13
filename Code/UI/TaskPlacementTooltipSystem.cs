@@ -4,6 +4,8 @@ using Game.UI.Tooltip;
 using Planboard.Data;
 using Planboard.Tools;
 
+// Publishes placement guidance that reflects the current preview state.
+
 namespace Planboard.UI
 {
     public partial class TaskPlacementTooltipSystem : TooltipSystemBase

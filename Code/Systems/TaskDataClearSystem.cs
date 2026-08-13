@@ -2,6 +2,8 @@ using Game;
 using Planboard.Data;
 using Unity.Entities;
 
+// Clears transient Planboard state when a city session is reset or replaced.
+
 namespace Planboard.Systems
 {
     public partial class TaskDataClearSystem : GameSystemBase

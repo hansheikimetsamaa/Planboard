@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.1.5 - 2026-08-13
+
+### New
+
+- Added a top-left toolbar option, now the default. The footer toolbar remains available in Settings.
+- Added Open, Doing, and Done status filters and quick status changes in the task list.
+- Added clearer filter menus, including “With pin location” and “Only in list”.
+
+### Improved
+
+- Fixed pin placement and moving on terrain, roads, buildings, and map objects.
+- Placement now uses the game’s normal tool actions; right-click, Escape, and tool switching cancel cleanly.
+- “Create & Place” drafts are only saved after a pin is successfully placed.
+- Improved task list scrolling, visible scrollbar, row spacing, status menus, and pop-up behaviour.
+- Improved category and deadline dropdowns in the task editor.
+- Improved marker cards so long titles wrap correctly.
+- Reworked icon states for clearer contrast and no hover flicker.
+- Improved settings sections and vanilla tool-binding support.
+
+### Reliability
+
+- Improved save validation and protection for unsupported newer save versions.
+- Added more regression checks and cleaned up formatting, comments, and source structure.
+
 ## 0.1.4 - 2026-08-11
 
 - Added mouse-wheel scrolling and a visible scrollbar to the task list.

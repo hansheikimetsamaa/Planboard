@@ -1,3 +1,5 @@
+// Defines the constrained values used by task data, placement, and map rendering.
+
 namespace Planboard.Data
 {
     public enum EntryKind : byte { Issue, Task, Idea }

@@ -1,74 +1,47 @@
 # Planboard
 
-**City Tasks & Map Notes & ToDo**
+**City Tasks & Map Notes & ToDo for Cities: Skylines II**
 
-Planboard is a location-aware planning mod for Cities: Skylines II. It keeps issues, notes, and ideas inside the city save and can attach them to map points, districts, roads, or buildings.
+Planboard is a location-aware planning mod for Cities: Skylines II. Capture issues, notes, and ideas in
+one place, then attach them to the exact point, road, building, or district you want to revisit.
 
 ## Features
 
-- Issue, Note, and Idea entry kinds
-- Open, Doing, and Done statuses
-- Built-in and custom categories with four priority levels
-- One preferred deadline calendar: real-life or in-game
-- Search, tabs, filters, sorting, overdue indicators, and recoverable deletion
-- Optional map placement, marker navigation, sticky notes, and visibility modes
-- District-panel quick creation
-- Versioned save data with repair and missing-link reporting
-- Remembered, resizable window layouts
+- Create Issue, Note, and Idea entries.
+- Track Open, Doing, and Done work with categories, custom labels, priorities, and deadlines.
+- Keep list-only tasks or pin them to terrain, roads, buildings, and districts.
+- Search, filter, sort, and revisit work using map markers or sticky notes.
+- Keep one preferred deadline calendar: real-life or in-game.
+- Save planning data with the city, including recoverable deletion and missing-link reporting.
 
-## Changelog
+## Availability and feedback
 
-### 0.1.4 - 2026-08-11
+Planboard 0.1.5 is currently in private testing. Feedback, bug reports, and feature ideas are welcome
+through [GitHub Issues](https://github.com/hansheikimetsamaa/Planboard/issues).
+
+## Recent releases
+
+### 0.1.5 — 2026-08-13
+
+- Added a top-left toolbar option, quick status changes, and clearer filter menus.
+- Improved placement, scrolling, pop-ups, marker cards, icon states, and tool-binding support.
+- Improved save protection, tests, comments, and source formatting.
+
+### 0.1.4 — 2026-08-11
 
 - Added mouse-wheel scrolling and a visible scrollbar to the task list.
 - Let filter menus overlay the list, and refined map-note titles and the draft editor.
 
-### 0.1.3 - 2026-08-11
+### 0.1.3 — 2026-08-11
 
 - Restored native terrain, road, and building marker placement.
 - Restored calendar, deadlines, filters, map modes, autosave, undo, and draft workflows.
 - Replaced cycling filters with dropdown menus and improved toolbar and icon contrast.
 
-### 0.1.2 - 2026-08-05
+## For contributors
 
-- Changed default shortcuts to `Ctrl+Alt+P` and `Ctrl+Alt+Shift+P` to avoid common mod conflicts.
-- Fixed CS2 toolchain compatibility when creating runtime marker and navigation entities.
-
-### 0.1.1 - 2026-08-04
-
-- Fixed data-loss risks for unsupported save formats and interrupted map placement.
-- Fixed navigation to completed or otherwise hidden map pins.
-- Made data repairs, compatibility failures, and recovery guidance visible in-game.
-- Improved large-list responsiveness, accessibility labels, and native build verification.
-
-## Repository layout
-
-- `Code/` - C# mod, ECS systems, placement tool, serialization, rendering, settings, and UI bindings
-- `UI/` - React/TypeScript Gameface UI
-- `Tests/` - domain, lifecycle, binding-contract, and repository tests
-- `docs/` - build, testing, and dependency notes
-- `Inspiration/` - ignored local reference material; never published or included in builds
-
-Planboard uses `Planboard` consistently for its assembly, namespaces, settings, localization, bindings, UI module, and serializer identity. Pre-release development saves made under an older internal identity are not supported.
-
-## Local verification
-
-```powershell
-cd UI
-npm ci
-npm run typecheck
-npm test
-npm run build
-```
-
-`npm run build` writes only to `UI/build`. Use `npm run deploy` to build directly into the local CS2 Mods folder. A full native build runs that deployment automatically:
-
-```powershell
-cd ..
-dotnet build .\Planboard.sln -c Release
-```
-
-The C# build requires Cities: Skylines II and its official Windows modding toolchain. See [docs/WINDOWS_BUILD.md](docs/WINDOWS_BUILD.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for repository
+layout, formatting, verification, and native build instructions.
 
 ## License
 

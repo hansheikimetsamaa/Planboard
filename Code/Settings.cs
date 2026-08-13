@@ -9,45 +9,87 @@ using Game.Settings;
 using Game.UI.Localization;
 using Game.UI.Widgets;
 
+// Defines user-facing settings, input bindings, and their localization metadata.
+
 namespace Planboard
 {
     [FileLocation("ModsSettings\\Planboard\\Planboard")]
+    [SettingsUITabOrder(GeneralTab, KeybindingsTab)]
+    [SettingsUIGroupOrder(MapDisplaySection, PlanningSection, InterfaceSection, MaintenanceSection, ToolsSection, ShortcutsSection)]
+    [SettingsUIShowGroupName(MapDisplaySection, PlanningSection, InterfaceSection, MaintenanceSection, ToolsSection, ShortcutsSection)]
     [SettingsUIKeyboardAction(TogglePanelAction, usages: new[] { Usages.kMenuUsage }, interactions: new[] { "UIButton" })]
     [SettingsUIKeyboardAction(PlaceMarkerAction, usages: new[] { Usages.kToolUsage }, interactions: new[] { "UIButton" })]
-    [SettingsUIMouseAction(ApplyPlacementAction, ActionType.Button, SettingsUIInputActionAttribute.kDefaultRebindOptions, ModifierOptions.Disallow, false, usages: new[] { Usages.kToolUsage })]
-    [SettingsUIMouseAction(CancelPlacementAction, ActionType.Button, SettingsUIInputActionAttribute.kDefaultRebindOptions, ModifierOptions.Disallow, false, usages: new[] { Usages.kToolUsage })]
+    [SettingsUIMouseAction(ApplyPlacementAction, ActionType.Button, SettingsUIInputActionAttribute.kDefaultRebindOptions, ModifierOptions.Disallow, false, usages: new[] { PlacementToolUsage })]
+    [SettingsUIMouseAction(CancelPlacementAction, ActionType.Button, SettingsUIInputActionAttribute.kDefaultRebindOptions, ModifierOptions.Disallow, false, usages: new[] { PlacementToolUsage })]
     public sealed class Settings : ModSetting
     {
+        // Stable identifiers are shared by settings attributes, localization, and UI bindings.
+        public const string GeneralTab = "General";
+        public const string KeybindingsTab = "Keybindings";
+        public const string MapDisplaySection = "MapDisplay";
+        public const string PlanningSection = "Planning";
+        public const string InterfaceSection = "Interface";
+        public const string MaintenanceSection = "Maintenance";
+        public const string ToolsSection = "Tools";
+        public const string ShortcutsSection = "Shortcuts";
+        public const string PlacementToolUsage = "Planboard.Tool";
         public const string TogglePanelAction = "TogglePlanboard";
         public const string PlaceMarkerAction = "PlacePlanboardMarker";
         public const string ApplyPlacementAction = "ApplyPlanboardPlacement";
         public const string CancelPlacementAction = "CancelPlanboardPlacement";
         public const string RealLifeDeadlineMode = "real";
         public const string InGameDeadlineMode = "game";
+        public const string TopLeftToolbarLocation = "topLeft";
+        public const string FooterToolbarLocation = "footer";
 
         public Settings(IMod mod) : base(mod) { }
 
+        // General shortcuts remain configurable independently of the placement tool's scoped actions.
+        [SettingsUISection(KeybindingsTab, ShortcutsSection)]
         [SettingsUIKeyboardBinding(BindingKeyboard.P, TogglePanelAction, ctrl: true, alt: true)]
         public ProxyBinding TogglePanel { get; set; }
 
+        [SettingsUISection(KeybindingsTab, ShortcutsSection)]
         [SettingsUIKeyboardBinding(BindingKeyboard.P, PlaceMarkerAction, ctrl: true, alt: true, shift: true)]
         public ProxyBinding PlaceMarker { get; set; }
 
+        // Tool bindings are active only while Planboard owns the placement tool.
+        [SettingsUISection(KeybindingsTab, ToolsSection)]
+        [SettingsUISetter(typeof(Settings), nameof(OnUseVanillaToolBindingsSet))]
+        public bool UseVanillaToolBindings { get; set; } = true;
+
+        // These actions use a separate action map and are enabled only during placement.
+        // Vanilla mode keeps them synchronized with CS2; custom mode leaves them editable.
+        [SettingsUISection(KeybindingsTab, ToolsSection)]
+        [SettingsUIDisableByCondition(typeof(Settings), nameof(UseVanillaToolBindings))]
         [SettingsUIMouseBinding(BindingMouse.Left, ApplyPlacementAction, ctrl: false)]
         public ProxyBinding ApplyPlacement { get; set; }
 
+        [SettingsUISection(KeybindingsTab, ToolsSection)]
+        [SettingsUIDisableByCondition(typeof(Settings), nameof(UseVanillaToolBindings))]
         [SettingsUIMouseBinding(BindingMouse.Right, CancelPlacementAction, ctrl: false)]
         public ProxyBinding CancelPlacement { get; set; }
 
+        [SettingsUISection(GeneralTab, MapDisplaySection)]
         public bool ShowCompletedMarkers { get; set; }
+
+        [SettingsUISection(GeneralTab, MapDisplaySection)]
         public bool ShowAllTitles { get; set; }
 
+        // Watchers mirror CS2's current mouse bindings while vanilla mode is enabled.
+        // They are disposed before replacement so repeated settings changes cannot accumulate listeners.
         private readonly Dictionary<string, ProxyBinding.Watcher> _placementBindingWatchers = new();
+        private bool _placementBindingsInitialized;
 
+        [SettingsUISection(GeneralTab, PlanningSection)]
         [SettingsUIDropdown(typeof(Settings), nameof(GetDeadlineModeOptions))]
         public string DeadlineMode { get; set; } = RealLifeDeadlineMode;
 
+        [SettingsUISection(GeneralTab, InterfaceSection)]
+        [SettingsUIDropdown(typeof(Settings), nameof(GetToolbarLocationOptions))]
+        public string ToolbarLocation { get; set; } = TopLeftToolbarLocation;
 
+        // Dropdown values remain stable identifiers; localized display text can change independently.
         public static DropdownItem<string>[] GetDeadlineModeOptions()
         {
             return new[]
@@ -56,20 +98,53 @@ namespace Planboard
                 new DropdownItem<string> { value = InGameDeadlineMode, displayName = LocalizedString.Value("In-game calendar") }
             };
         }
+
+        public static DropdownItem<string>[] GetToolbarLocationOptions()
+        {
+            return new[]
+            {
+                new DropdownItem<string> { value = TopLeftToolbarLocation, displayName = LocalizedString.Value("Top-left toolbar") },
+                new DropdownItem<string> { value = FooterToolbarLocation, displayName = LocalizedString.Value("Footer toolbar") }
+            };
+        }
+
+        // Maintenance actions are write-only toggles because the game settings UI renders them as buttons.
+        [SettingsUISection(GeneralTab, MaintenanceSection)]
         public int WindowLayoutRevision { get; private set; }
 
+        [SettingsUISection(GeneralTab, MaintenanceSection)]
         public bool ResetWindowLayout
         {
             set { if (value) WindowLayoutRevision++; }
         }
-
+        [SettingsUISection(KeybindingsTab, ShortcutsSection)]
         public bool ResetBindings
         {
             set
             {
                 ResetKeyBindings();
-                if (_placementBindingWatchers.Count > 0) EnablePlacementBindingMirrors();
+                if (_placementBindingsInitialized) ApplyPlacementBindingMode();
             }
+        }
+
+        // Binding mirrors are installed after settings load and refreshed whenever their mode changes.
+        internal void InitializePlacementBindings()
+        {
+            _placementBindingsInitialized = true;
+            ApplyPlacementBindingMode();
+        }
+
+        private void ApplyPlacementBindingMode()
+        {
+            if (UseVanillaToolBindings) EnablePlacementBindingMirrors();
+            else DisablePlacementBindingMirrors();
+        }
+
+        private void OnUseVanillaToolBindingsSet(bool value)
+        {
+            if (!_placementBindingsInitialized) return;
+            if (value) EnablePlacementBindingMirrors();
+            else DisablePlacementBindingMirrors();
         }
 
         internal void EnablePlacementBindingMirrors()
@@ -83,13 +158,17 @@ namespace Planboard
             catch (Exception exception)
             {
                 DisablePlacementBindingMirrors();
-                Mod.Log.Warn($"Could not mirror the current game tool bindings; Planboard will use its default mouse bindings: {exception.Message}");
+                Mod.Log.Warn(
+                    "Could not mirror the current game tool bindings; Planboard will use its "
+                        + $"default mouse bindings: {exception.Message}"
+                );
             }
         }
 
         internal void DisablePlacementBindingMirrors()
         {
-            foreach (ProxyBinding.Watcher watcher in _placementBindingWatchers.Values) watcher.Dispose();
+            foreach (ProxyBinding.Watcher watcher in _placementBindingWatchers.Values)
+                watcher.Dispose();
             _placementBindingWatchers.Clear();
         }
 
@@ -97,13 +176,25 @@ namespace Planboard
         {
             ProxyAction gameAction = InputManager.instance.FindAction(InputManager.kToolMap, gameActionName);
             ProxyAction planboardAction = GetAction(planboardActionName);
-            ProxyBinding gameBinding = gameAction.bindings.FirstOrDefault(binding => (binding.device & InputManager.DeviceType.Mouse) != 0);
-            ProxyBinding planboardBinding = planboardAction.bindings.FirstOrDefault(binding => (binding.device & InputManager.DeviceType.Mouse) != 0);
+            ProxyBinding gameBinding = gameAction.bindings.FirstOrDefault(
+                binding => (binding.device & InputManager.DeviceType.Mouse) != 0
+            );
+            ProxyBinding planboardBinding = planboardAction.bindings.FirstOrDefault(
+                binding => (binding.device & InputManager.DeviceType.Mouse) != 0
+            );
             if (string.IsNullOrEmpty(gameBinding.path))
-                throw new InvalidOperationException($"Game action '{gameActionName}' has no mouse binding.");
+                throw new InvalidOperationException(
+                    $"Game action '{gameActionName}' has no mouse binding."
+                );
             if (string.IsNullOrEmpty(planboardBinding.path))
-                throw new InvalidOperationException($"Planboard action '{planboardActionName}' has no mouse binding.");
-            ProxyBinding.Watcher watcher = new(gameBinding, binding => CopyBinding(planboardBinding, binding));
+                throw new InvalidOperationException(
+                    $"Planboard action '{planboardActionName}' has no mouse binding."
+                );
+
+            ProxyBinding.Watcher watcher = new(
+                gameBinding,
+                binding => CopyBinding(planboardBinding, binding)
+            );
             CopyBinding(planboardBinding, watcher.binding);
             _placementBindingWatchers.Add(gameActionName, watcher);
         }
@@ -120,7 +211,9 @@ namespace Planboard
         {
             ShowCompletedMarkers = false;
             ShowAllTitles = false;
+            UseVanillaToolBindings = true;
             DeadlineMode = RealLifeDeadlineMode;
+            ToolbarLocation = TopLeftToolbarLocation;
             ResetBindings = true;
         }
     }
@@ -135,30 +228,61 @@ namespace Planboard
             IList<IDictionaryEntryError> errors,
             Dictionary<string, int> indexCounts)
         {
+            // Settings and binding labels live alongside UI strings so the mod has one English source.
             return new Dictionary<string, string>
             {
                 { _settings.GetSettingsLocaleID(), "Planboard" },
+                { _settings.GetOptionTabLocaleID(Settings.GeneralTab), "General" },
+                { _settings.GetOptionTabLocaleID(Settings.KeybindingsTab), "Key bindings" },
+                { _settings.GetOptionGroupLocaleID(Settings.MapDisplaySection), "Map display" },
+                { _settings.GetOptionGroupLocaleID(Settings.PlanningSection), "Planning" },
+                { _settings.GetOptionGroupLocaleID(Settings.InterfaceSection), "Interface" },
+                { _settings.GetOptionGroupLocaleID(Settings.MaintenanceSection), "Maintenance" },
+                { _settings.GetOptionGroupLocaleID(Settings.ToolsSection), "Tools" },
+                { _settings.GetOptionGroupLocaleID(Settings.ShortcutsSection), "Shortcuts" },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.TogglePanel)), "Toggle Planboard" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.TogglePanel)), "Open or close the Planboard panel." },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.PlaceMarker)), "Place selected task marker" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.PlaceMarker)), "Start marker placement for the selected entry." },
-                { _settings.GetOptionLabelLocaleID(nameof(Settings.ApplyPlacement)), "Place marker" },
-                { _settings.GetOptionDescLocaleID(nameof(Settings.ApplyPlacement)), "Confirm the marker location while the placement tool is active." },
-                { _settings.GetOptionLabelLocaleID(nameof(Settings.CancelPlacement)), "Cancel marker placement" },
-                { _settings.GetOptionDescLocaleID(nameof(Settings.CancelPlacement)), "Cancel marker placement while the placement tool is active." },
+                { _settings.GetOptionLabelLocaleID(nameof(Settings.UseVanillaToolBindings)), "Use vanilla tool bindings" },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.UseVanillaToolBindings)),
+                    "Mirror Cities: Skylines II's current apply and cancel tool controls."
+                },
+                { _settings.GetOptionLabelLocaleID(nameof(Settings.ApplyPlacement)), "Apply tool action" },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.ApplyPlacement)),
+                    "Used only while placing a Planboard marker."
+                },
+                { _settings.GetOptionLabelLocaleID(nameof(Settings.CancelPlacement)), "Cancel tool action" },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.CancelPlacement)),
+                    "Used only while placing a Planboard marker."
+                },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.DeadlineMode)), "Preferred deadline" },
-                { _settings.GetOptionDescLocaleID(nameof(Settings.DeadlineMode)), "Choose whether Planboard deadlines follow the real-life calendar or the city simulation calendar." },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.DeadlineMode)),
+                    "Choose whether Planboard deadlines follow the real-life calendar " +
+                    "or the city simulation calendar."
+                },
+                { _settings.GetOptionLabelLocaleID(nameof(Settings.ToolbarLocation)), "Toolbar location" },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.ToolbarLocation)),
+                    "Choose where Planboard's grouped map controls appear."
+                },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ShowCompletedMarkers)), "Show completed markers" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.ShowCompletedMarkers)), "Show completed work on the map with reduced emphasis." },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ShowAllTitles)), "Show all marker titles" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.ShowAllTitles)), "Show marker titles even when they are not selected." },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ResetWindowLayout)), "Reset window layout" },
-                { _settings.GetOptionDescLocaleID(nameof(Settings.ResetWindowLayout)), "Restore the main panel and sticky editor to their default size and position." },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.ResetWindowLayout)),
+                    "Restore the main panel and sticky editor to their default size and position."
+                },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ResetBindings)), "Reset key bindings" },
                 { _settings.GetOptionDescLocaleID(nameof(Settings.ResetBindings)), "Restore Planboard keyboard shortcuts." },
                 { _settings.GetBindingMapLocaleID(), "Planboard" },
                 { "Planboard.UI.Title", "Planboard" },
-                { "Planboard.UI.Subtitle", "City Tasks & Map Notes & ToDo" },
                 { "Planboard.UI.Add", "Add task" },
                 { "Planboard.UI.AddDistrict", "Add to Planboard" },
                 { "Planboard.UI.Empty", "No entries match the current view." },
@@ -187,8 +311,8 @@ namespace Planboard
                 { "Planboard.UI.Priority", "Priority" },
                 { "Planboard.UI.All", "All" },
                 { "Planboard.UI.Location", "Location" },
-                { "Planboard.UI.Located", "Located" },
-                { "Planboard.UI.ListOnly", "List-only" },
+                { "Planboard.UI.Located", "With pin location" },
+                { "Planboard.UI.ListOnly", "Only in list" },
                 { "Planboard.UI.Sort", "Sort" },
                 { "Planboard.UI.RecentlyUpdated", "Recently updated" },
                 { "Planboard.UI.RealDeadline", "Real deadline" },
