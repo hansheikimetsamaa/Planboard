@@ -432,7 +432,8 @@ $red: tokens.$red;
   max-height: 100%;
   display: flex;
   flex-wrap: wrap;
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   padding: 7rem;
   box-sizing: border-box;
   background-color: rgba(8, 20, 29, 0.99);
@@ -441,6 +442,7 @@ $red: tokens.$red;
   border-color: rgba(200, 230, 242, 0.2);
   border-radius: tokens.$radius-card;
   box-shadow: 0 10rem 28rem rgba(0, 0, 0, 0.42);
+  @include tokens.panel-scrollbar;
 }
 .categoryMenu > button {
   width: 46%;
@@ -515,6 +517,42 @@ $red: tokens.$red;
   flex: 1 1 auto;
   position: relative;
   display: flex;
+}
+
+// All non-list scroll regions use this same explicit track and wheel path.
+// Native CSS scrollbars are unreliable in Gameface, especially inside a panel.
+.scrollFrame {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+}
+.scrollViewport {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.scrollbar {
+  position: absolute;
+  z-index: 3;
+  top: 7rem;
+  right: 5rem;
+  bottom: 7rem;
+  width: 7rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  background-color: rgba(196, 226, 238, 0.1);
+  border-radius: tokens.$radius-pill;
+  pointer-events: auto;
+}
+.scrollbar:hover {
+  background-color: rgba(196, 226, 238, 0.17);
+}
+.scrollbarThumb {
+  width: 100%;
+  min-height: 24rem;
+  background-color: rgba(220, 237, 245, 0.62);
+  border-radius: tokens.$radius-pill;
 }
 .taskList {
   min-width: 0;
@@ -742,13 +780,15 @@ $red: tokens.$red;
 .issues {
   flex: 0 0 auto;
   max-height: 100rem;
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   padding: 7rem 12rem;
   color: #ffc879;
   background-color: rgba(255, 184, 90, 0.06);
   border-top-width: 1rem;
   border-top-style: solid;
   border-top-color: rgba(255, 184, 90, 0.2);
+  @include tokens.panel-scrollbar;
 }
 .issues p {
   margin: 5rem 0;
@@ -826,6 +866,10 @@ $red: tokens.$red;
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+.editorScrollFrame {
+  min-height: 0;
+  flex: 1 1 auto;
 }
 .detailTopbar {
   flex: 0 0 auto;
@@ -974,6 +1018,12 @@ $red: tokens.$red;
   max-height: 172rem;
   overflow-y: scroll;
   @include tokens.panel-scrollbar;
+}
+.locationListScrollFrame {
+  height: 172rem;
+  min-height: 0;
+  max-height: 172rem;
+  flex: 0 0 172rem;
 }
 .locationRow {
   min-height: tokens.$compact-action-height;
@@ -1551,13 +1601,15 @@ $red: tokens.$red;
   max-height: 100%;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   padding: 9rem;
   box-sizing: border-box;
   background-color: rgba(5, 16, 23, 0.98);
   border: 1rem solid rgba(94, 207, 245, 0.34);
   border-radius: tokens.$radius-card;
   box-shadow: 0 8rem 20rem rgba(0, 0, 0, 0.26);
+  @include tokens.panel-scrollbar;
 }
 .calendarHeader {
   display: flex;
@@ -1674,13 +1726,17 @@ $red: tokens.$red;
   left: 0;
   right: 0;
   min-width: 132rem;
+  max-height: 240rem;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: scroll;
   padding: 4rem;
   background-color: rgba(5, 16, 23, 0.99);
   border: 1rem solid rgba(200, 230, 242, 0.24);
   border-radius: tokens.$radius-control;
   box-shadow: 0 8rem 22rem rgba(0, 0, 0, 0.45);
+  @include tokens.panel-scrollbar;
 }
 .choiceMenu > button {
   min-height: tokens.$compact-action-height;

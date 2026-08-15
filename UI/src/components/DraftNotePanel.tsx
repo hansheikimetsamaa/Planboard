@@ -17,6 +17,7 @@ import {
 import { KindIcon } from "./KindIcon";
 import { CategoryMenu, PriorityPicker } from "./EntryControls";
 import { categoryChoiceKey, compactDraftCategoryChoices } from "../model";
+import { ScrollableSurface } from "./ScrollableSurface";
 import { usePanelGeometry } from "./usePanelGeometry";
 import {
   blurTextInputOnEscape,
@@ -206,7 +207,11 @@ function DraftEditor({ entry, entries }: { entry: EntryView; entries: EntryView[
       showCloseHint={false}
     >
       <div ref={overlayHost} className={styles.overlayHost}>
-        <div className={styles.sticky}>
+        <ScrollableSurface
+          frameClassName={styles.stickyScrollFrame}
+          viewportClassName={styles.sticky}
+          ariaLabel="Pin placed form scrollbar"
+        >
           <div className={styles.kinds}>
             {kindLabels.map((label, value) => (
               <Button
@@ -333,7 +338,7 @@ function DraftEditor({ entry, entries }: { entry: EntryView; entries: EntryView[
             overlayHost={overlayHost}
             includeCustomInput={false}
           />
-        </div>
+        </ScrollableSurface>
         <div className={styles.actions}>
           {confirmDiscard ? (
             <div className={styles.discardConfirmation}>

@@ -298,7 +298,12 @@ test("multiple task locations migrate safely and expose per-pin editor actions",
     editorStyles,
     /\.locationListOverflow\s*\{[^}]*height:\s*172rem[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s,
   );
-  assert.match(editor, /locations\.length > 4 \? styles\.locationListOverflow : ""/);
+  assert.match(editor, /locations\.length > 4 \? \(/);
+  assert.match(editor, /ariaLabel="Task pin list scrollbar"/);
+  assert.match(
+    editor,
+    /viewportClassName=\{`\$\{styles\.locationList\} \$\{styles\.locationListOverflow\}`\}/,
+  );
 });
 
 // Completing a task clears every map representation, while leaving the task safely
@@ -600,6 +605,32 @@ test("overflowing task lists expose an interactive Gameface-safe scrollbar", asy
   assert.match(panel, /event\.deltaMode === 1 \? 32/);
   assert.match(styles, /\.taskScrollFrame\s*\{[^}]*min-height:\s*0[^}]*flex:\s*1 1 auto/);
   assert.match(styles, /\.taskScrollbarThumb\s*\{/);
+});
+
+// Every bounded content surface uses the same scrollbar mixin. Panel chrome and
+// map cards deliberately stay fixed so they cannot turn into cramped scroll panes.
+test("forms, menus, calendars, and district rows reveal overflow consistently", async () => {
+  const panel = await read("../UI/src/components/mainPanel.module.scss");
+  const draft = await read("../UI/src/components/draftNote.module.scss");
+  const district = await read("../UI/src/components/districtAction.module.scss");
+  const surface = await read("../UI/src/components/ScrollableSurface.tsx");
+
+  assert.match(panel, /\.editor\s*\{[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s);
+  assert.match(panel, /\.locationListOverflow\s*\{[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s);
+  assert.match(panel, /\.categoryMenu\s*\{[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s);
+  assert.match(
+    panel,
+    /\.calendarOverlay \.calendarPanel\s*\{[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s,
+  );
+  assert.match(
+    panel,
+    /\.choiceMenu\s*\{[^}]*max-height:\s*240rem[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s,
+  );
+  assert.match(draft, /\.sticky\s*\{[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s);
+  assert.match(district, /\.entries\s*\{[^}]*overflow-y:\s*scroll[^}]*panel-scrollbar/s);
+  assert.match(surface, /role="scrollbar"/);
+  assert.match(surface, /onWheel=\{scrollWithWheel\}/);
+  assert.match(surface, /parent editor can keep scrolling/);
 });
 test("large task lists render in bounded pages", async () => {
   const panel = await readUi(

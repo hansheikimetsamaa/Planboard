@@ -80,8 +80,14 @@
   max-height: 188rem;
   flex-direction: column;
   gap: 4rem;
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   @include tokens.panel-scrollbar;
+}
+.entriesScrollFrame {
+  min-height: 0;
+  max-height: 188rem;
+  flex: 0 1 auto;
 }
 
 .entry {

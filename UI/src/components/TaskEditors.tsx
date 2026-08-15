@@ -18,6 +18,7 @@ import {
 } from "../types/contracts";
 import { CategoryPicker, KindPicker, PriorityPicker, StatusPicker } from "./EntryControls";
 import { DeadlineCalendar } from "./DeadlineCalendar";
+import { ScrollableSurface } from "./ScrollableSurface";
 import { blurTextInputOnEscape, useEscapeDismissal } from "./useEscapeDismissal";
 import styles from "./mainPanel.module.scss";
 
@@ -162,7 +163,11 @@ export function NewEditor({
         </Button>
         <span className={styles.newLabel}>New item</span>
       </div>
-      <div className={styles.editor}>
+      <ScrollableSurface
+        frameClassName={styles.editorScrollFrame}
+        viewportClassName={styles.editor}
+        ariaLabel="New item editor scrollbar"
+      >
         <input
           aria-label="Title"
           className={styles.titleInput}
@@ -239,7 +244,7 @@ export function NewEditor({
             onKeyDown={blurTextInputOnEscape}
           />
         </div>
-      </div>
+      </ScrollableSurface>
       <div className={styles.createActions}>
         {confirmDiscard ? (
           <>
@@ -351,6 +356,34 @@ export function Editor({
       : "Pinned to map";
   const locations = entry.locations ?? [];
   const hasDistrictLocation = locations.some((location) => location.hasDistrict);
+  const locationRows = locations.map((location, index) => (
+    <div key={location.id} className={styles.locationRow}>
+      <span>
+        Pin {index + 1} · {Math.round(location.x)}, {Math.round(location.z)}
+      </span>
+      <div>
+        <Button
+          variant="flat"
+          onSelect={() => trigger(Binding.group, Binding.navigateToLocation, entry.id, location.id)}
+        >
+          View
+        </Button>
+        <Button
+          variant="flat"
+          onSelect={() => trigger(Binding.group, Binding.moveLocation, entry.id, location.id)}
+        >
+          Move
+        </Button>
+        <Button
+          variant="flat"
+          className={styles.locationRemove}
+          onSelect={() => trigger(Binding.group, Binding.removeLocation, entry.id, location.id)}
+        >
+          Remove
+        </Button>
+      </div>
+    </div>
+  ));
   return (
     <div
       ref={overlayHost}
@@ -369,7 +402,11 @@ export function Editor({
           Delete
         </Button>
       </div>
-      <div className={styles.editor}>
+      <ScrollableSurface
+        frameClassName={styles.editorScrollFrame}
+        viewportClassName={styles.editor}
+        ariaLabel="Task editor scrollbar"
+      >
         <input
           aria-label="Title"
           className={styles.titleInput}
@@ -413,48 +450,19 @@ export function Editor({
               )}
             </div>
           </div>
-          {locations.length > 0 && !hasDistrictLocation && (
-            <div
-              className={`${styles.locationList} ${
-                locations.length > 4 ? styles.locationListOverflow : ""
-              }`}
-            >
-              {locations.map((location, index) => (
-                <div key={location.id} className={styles.locationRow}>
-                  <span>
-                    Pin {index + 1} · {Math.round(location.x)}, {Math.round(location.z)}
-                  </span>
-                  <div>
-                    <Button
-                      variant="flat"
-                      onSelect={() =>
-                        trigger(Binding.group, Binding.navigateToLocation, entry.id, location.id)
-                      }
-                    >
-                      View
-                    </Button>
-                    <Button
-                      variant="flat"
-                      onSelect={() =>
-                        trigger(Binding.group, Binding.moveLocation, entry.id, location.id)
-                      }
-                    >
-                      Move
-                    </Button>
-                    <Button
-                      variant="flat"
-                      className={styles.locationRemove}
-                      onSelect={() =>
-                        trigger(Binding.group, Binding.removeLocation, entry.id, location.id)
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {locations.length > 0 &&
+            !hasDistrictLocation &&
+            (locations.length > 4 ? (
+              <ScrollableSurface
+                frameClassName={styles.locationListScrollFrame}
+                viewportClassName={`${styles.locationList} ${styles.locationListOverflow}`}
+                ariaLabel="Task pin list scrollbar"
+              >
+                {locationRows}
+              </ScrollableSurface>
+            ) : (
+              <div className={styles.locationList}>{locationRows}</div>
+            ))}
         </div>
         <div className={styles.grid}>
           <KindPicker value={kind} labels={k} onChange={setKind} />
@@ -494,7 +502,7 @@ export function Editor({
             onKeyDown={blurTextInputOnEscape}
           />
         </div>
-      </div>
+      </ScrollableSurface>
       <div className={styles.autosave}>
         <span></span>Changes save automatically
       </div>

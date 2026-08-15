@@ -7,6 +7,7 @@ import { districtEntries$, districtSelected$, districtSelectionRevision$ } from 
 import { usePlanboardLocale } from "../labels";
 import { Binding, EntryKind, EntryStatus, EntryView } from "../types/contracts";
 import { KindIcon } from "./KindIcon";
+import { ScrollableSurface } from "./ScrollableSurface";
 import { StatusIcon } from "./StatusIcon";
 import { ListPopover, ListPopoverKind } from "./TaskList";
 import styles from "./districtAction.module.scss";
@@ -205,7 +206,11 @@ function DistrictActionInner({ InfoSection }: { InfoSection: React.ComponentType
             {t("DistrictEmpty", "No Planboard items in this district yet.")}
           </p>
         ) : (
-          <div className={styles.entries}>
+          <ScrollableSurface
+            frameClassName={styles.entriesScrollFrame}
+            viewportClassName={styles.entries}
+            ariaLabel="District Planboard list scrollbar"
+          >
             {entries.map((entry) => {
               const category = entry.categoryName || categoryLabels[entry.category] || "General";
               const rowPopover = activePopover?.entryId === entry.id ? activePopover.kind : null;
@@ -224,7 +229,7 @@ function DistrictActionInner({ InfoSection }: { InfoSection: React.ComponentType
                 />
               );
             })}
-          </div>
+          </ScrollableSurface>
         )}
       </section>
     </InfoSection>

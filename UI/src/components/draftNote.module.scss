@@ -276,8 +276,15 @@ $red: tokens.$red;
 .sticky {
   min-height: 0;
   flex: 1 1 auto;
-  overflow-y: auto;
+  // The form keeps its header and Save/Discard footer fixed while long content
+  // scrolls through the same visible Gameface treatment as the full editor.
+  overflow-x: hidden;
+  overflow-y: scroll;
   @include tokens.panel-scrollbar;
+}
+.stickyScrollFrame {
+  min-height: 0;
+  flex: 1 1 auto;
 }
 .resizeHandle {
   position: absolute;
