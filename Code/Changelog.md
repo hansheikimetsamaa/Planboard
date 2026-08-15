@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.1.6 - 2026-08-15
+
+### New
+
+- Added direct pin placement: choose the place first, then write the note in the focused draft.
+- Added multiple map pins to a single task, including continuous **Add more pins** placement.
+- Added district notes that stay centred on their live district and appear in the district inspector.
+
+### Improved
+
+- Made Escape, close buttons, discard prompts, dropdowns, and calendars follow one clear dismissal order.
+- Made Pin placed show the full form again, with recent categories, custom categories, priority, and description.
+- Improved map cards, sticky notes, task rows, pop-ups, panel scrolling, and text sizing for clearer reading.
+- Added a distinct stacked square marker for districts with more than one Planboard item.
+- Completed tasks now disappear from map pins, sticky notes, and world overlays while remaining in the task list.
+
+### Reliability
+
+- Moved task locations to a versioned collection, with automatic migration from older one-pin saves.
+- Added regression coverage for placement, districts, multi-pin tasks, scrolling, and completed-marker visibility.
+
 ## 0.1.5 - 2026-08-13
 
 ### New

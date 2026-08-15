@@ -1,11 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  compactDraftCategoryChoices,
   dateInputToTicks,
   filterAndSort,
+  formatDateInput,
   isValidDateInput,
   ticksToDateInput,
 } from "../UI/src/model.ts";
+
+// Node's lightweight TypeScript loader cannot execute enum declarations. These binding values
+// mirror EntryCategory; the contract suite separately keeps the C# and TypeScript enum order aligned.
+const category = {
+  Traffic: 0,
+  Roads: 1,
+  ZoningDevelopment: 4,
+  CityServices: 5,
+  Utilities: 6,
+  General: 9,
+};
 
 // These fixtures describe the smallest complete entry needed by the filtering domain.
 // Individual tests override only the fields relevant to the rule under test.
@@ -63,6 +76,53 @@ test("impossible and malformed dates are rejected instead of normalized", () => 
     assert.equal(dateInputToTicks(value), "0");
   }
   assert.equal(isValidDateInput("2028-02-29"), true);
+});
+
+test("date display preferences do not alter the stored ISO date", () => {
+  const value = "2026-08-29";
+  assert.equal(formatDateInput(value), value);
+  assert.equal(formatDateInput(value, "dayMonthYear"), "29/08/2026");
+  assert.equal(formatDateInput(value, "monthDayYear"), "08/29/2026");
+  assert.equal(formatDateInput("not-a-date", "dayMonthYear"), "");
+});
+
+// Compact draft choices are city-specific: recently saved categories take precedence without
+// turning a transient, uncommitted placement into lasting category history.
+test("compact draft categories are recent, varied, and safe for custom values", () => {
+  const entries = [
+    entry(1, { category: category.Traffic, updatedUtcTicks: "10" }),
+    entry(2, { category: category.Roads, updatedUtcTicks: "20" }),
+    entry(3, {
+      category: category.General,
+      categoryName: "Old Town",
+      updatedUtcTicks: "30",
+    }),
+    entry(4, { category: category.Roads, updatedUtcTicks: "40" }),
+    entry(5, { category: category.General, updatedUtcTicks: "50" }),
+  ];
+
+  assert.deepEqual(compactDraftCategoryChoices(entries, 5), [
+    { category: category.Roads, custom: "" },
+    { category: category.General, custom: "Old Town" },
+    { category: category.Traffic, custom: "" },
+    { category: category.General, custom: "" },
+  ]);
+  assert.deepEqual(
+    compactDraftCategoryChoices(entries, 5, {
+      category: category.Utilities,
+      custom: "",
+    }).map((choice) => choice.category),
+    [category.Utilities, category.Roads, category.General, category.Traffic],
+  );
+  assert.deepEqual(
+    compactDraftCategoryChoices([], 99).map((choice) => choice.category),
+    [category.General, category.Traffic, category.ZoningDevelopment, category.CityServices],
+  );
+  assert.deepEqual(compactDraftCategoryChoices(entries, 5, undefined, 3), [
+    { category: category.Roads, custom: "" },
+    { category: category.General, custom: "Old Town" },
+    { category: category.Traffic, custom: "" },
+  ]);
 });
 
 // Filtering is pure UI-domain logic and should compose regardless of the order controls are used.

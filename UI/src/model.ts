@@ -1,9 +1,62 @@
 // Contains pure filtering, sorting, and date-conversion helpers for task views.
 
-import type { DeadlineMode, EntryView, Filters } from "./types/contracts";
+import type {
+  DateFormat,
+  DeadlineMode,
+  EntryCategory,
+  EntryView,
+  Filters,
+} from "./types/contracts";
 
 const dotNetEpochTicks = 621355968000000000n;
 const ticksPerMillisecond = 10000n;
+
+export type CompactCategoryChoice = {
+  category: EntryCategory;
+  custom: string;
+};
+
+// A new city starts with varied, useful prompts. Once the player has saved tasks, those
+// choices naturally yield to the categories they have actually been using in that city.
+export const compactDraftCategoryDefaults = [
+  9, // General
+  0, // Traffic
+  4, // Zoning & Development
+  5, // City Services
+] as readonly EntryCategory[];
+
+export function categoryChoiceKey(category: EntryCategory, custom: string): string {
+  const cleanCustom = custom.trim();
+  return cleanCustom ? `custom:${cleanCustom.toLocaleLowerCase()}` : `standard:${category}`;
+}
+
+export function compactDraftCategoryChoices(
+  entries: EntryView[],
+  activeDraftId: number,
+  currentChoice?: CompactCategoryChoice,
+  maximum = 4,
+): CompactCategoryChoice[] {
+  const choices: CompactCategoryChoice[] = [];
+  const seen = new Set<string>();
+  const add = (choice: CompactCategoryChoice) => {
+    const key = categoryChoiceKey(choice.category, choice.custom);
+    if (seen.has(key) || choices.length === maximum) return;
+    seen.add(key);
+    choices.push(choice);
+  };
+
+  // A category selected in the currently open editor should be visible immediately, but it
+  // becomes lasting history only after Save. The transient entry itself is never considered.
+  if (currentChoice) add(currentChoice);
+
+  [...entries]
+    .filter((entry) => entry.id !== activeDraftId)
+    .sort((left, right) => compareTicksDesc(left.updatedUtcTicks, right.updatedUtcTicks))
+    .forEach((entry) => add({ category: entry.category, custom: entry.categoryName || "" }));
+
+  compactDraftCategoryDefaults.forEach((category) => add({ category, custom: "" }));
+  return choices;
+}
 
 export function isValidDateInput(value: string): boolean {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -36,6 +89,16 @@ export function ticksToDateInput(value: string): string {
   } catch {
     return "";
   }
+}
+
+// Dates stay as ISO strings in state and saves. This formatter changes only the
+// readable presentation selected in settings, so comparisons remain stable.
+export function formatDateInput(value: string, format: DateFormat = "iso"): string {
+  if (!isValidDateInput(value)) return "";
+  const [year, month, day] = value.split("-");
+  if (format === "dayMonthYear") return `${day}/${month}/${year}`;
+  if (format === "monthDayYear") return `${month}/${day}/${year}`;
+  return value;
 }
 
 export function filterAndSort(

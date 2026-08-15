@@ -29,6 +29,15 @@ declare module "cs2/ui" {
   export const Tooltip: ComponentType<{ tooltip: ReactNode; children: ReactNode }>;
   export const Portal: ComponentType<{ children: ReactNode }>;
 }
+declare module "cs2/input" {
+  import type { ComponentType, ReactNode } from "react";
+  export const InputActionConsumer: ComponentType<{
+    actions: Record<string, (() => boolean) | undefined> | null;
+    disabled?: boolean;
+    ignoreFocusState?: boolean;
+    children?: ReactNode;
+  }>;
+}
 declare module "cs2/l10n" {
   export function useLocalization(): { translate(key: string, fallback?: string): string };
 }

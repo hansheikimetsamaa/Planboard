@@ -37,6 +37,49 @@
   pointer-events: auto;
   overflow: visible;
 }
+.movable {
+  cursor: grab;
+}
+.anchor.dragging {
+  z-index: 1;
+  pointer-events: none;
+}
+.anchor.alwaysOpen {
+  // Sticky-note mode must sit above the normal marker layer. Gameface handles
+  // flex visibility more reliably than grid transitions on hidden controls.
+  z-index: 2;
+}
+.anchor.dragging .card {
+  display: flex;
+}
+.anchor.dragging .card,
+.anchor.dragging .marker {
+  cursor: grabbing;
+  pointer-events: none;
+}
+.marker.district {
+  border-radius: tokens.$radius-control;
+}
+.marker.district.stacked::before,
+.marker.district.stacked::after {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  content: "";
+  background-color: rgba(18, 31, 39, 0.9);
+  border: 1rem solid rgba(112, 132, 142, 0.5);
+  border-radius: tokens.$radius-control;
+  pointer-events: none;
+  z-index: -1;
+}
+.marker.district.stacked::before {
+  left: 4rem;
+  top: 4rem;
+}
+.marker.district.stacked::after {
+  left: 2rem;
+  top: 2rem;
+}
 .marker:hover {
   width: 30rem;
   height: 30rem;
@@ -68,26 +111,48 @@
   position: absolute;
   right: -4rem;
   top: -4rem;
-  width: 13rem;
-  height: 13rem;
+  width: 16rem;
+  height: 16rem;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   background-color: #ef5965;
   border-radius: tokens.$radius-circle;
-  font-size: 8rem;
+  font-size: tokens.$font-overline;
   font-weight: 750;
+}
+.districtCount {
+  position: absolute;
+  right: -4rem;
+  bottom: -4rem;
+  min-width: 16rem;
+  height: 16rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3rem;
+  box-sizing: border-box;
+  color: #08202b;
+  background-color: #bfefff;
+  border: 1rem solid rgba(10, 23, 32, 0.92);
+  border-radius: tokens.$radius-pill;
+  font-size: tokens.$font-overline;
+  font-weight: 750;
+  line-height: 1;
+  white-space: nowrap;
 }
 .card {
   display: none;
   position: absolute;
   left: 50%;
   bottom: 34rem;
-  width: 186rem;
-  min-height: 54rem;
-  padding: 10rem 12rem;
+  width: tokens.$map-card-min-width;
+  min-height: 64rem;
+  flex-direction: column;
+  padding: 12rem 14rem;
   box-sizing: border-box;
+  overflow: hidden;
   color: #eaf2f6;
   background-color: rgba(17, 29, 37, 0.98);
   border-width: 1rem;
@@ -102,7 +167,6 @@
 .anchor:hover .card,
 .alwaysOpen .card {
   display: flex;
-  flex-direction: column;
 }
 .card:hover {
   background-color: rgba(24, 39, 48, 0.99);
@@ -114,51 +178,66 @@
   align-items: flex-start;
 }
 .cardKind {
-  width: 19rem;
-  height: 19rem;
-  flex: 0 0 19rem;
+  position: relative;
+  width: 30rem;
+  height: 30rem;
+  flex: 0 0 30rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 6rem;
+  margin-right: 8rem;
   background-color: rgba(255, 255, 255, 0.06);
   border-radius: tokens.$radius-compact;
 }
+.cardKind.district {
+  border-radius: tokens.$radius-control;
+}
 .cardKind img {
-  width: 14rem;
-  height: 14rem;
+  width: 20rem;
+  height: 20rem;
   display: block;
 }
 .cardHeader strong {
   min-width: 0;
   flex: 1 1 auto;
-  max-height: 32rem;
+  max-height: 38rem;
   overflow: hidden;
   overflow-wrap: anywhere;
   word-break: break-word;
   color: #edf4f7;
-  font-size: 11rem;
+  font-size: tokens.$font-control;
   font-weight: 600;
   line-height: 1.35;
 }
 .meta {
+  width: auto;
+  max-width: 100%;
   min-width: 0;
   display: flex;
   align-items: center;
-  margin-top: 6rem;
-  padding-left: 25rem;
+  margin-top: 5rem;
+  padding-left: 38rem;
   color: rgba(184, 204, 213, 0.68);
-  font-size: 8rem;
+  font-size: tokens.$font-meta;
   white-space: nowrap;
   overflow: hidden;
 }
 .meta > * {
+  min-width: 0;
+  flex: 0 1 auto;
   margin-right: 5rem;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .meta > *:last-child {
   margin-right: 0;
+}
+.categoryMeta {
+  flex: 1 1 auto;
+}
+.due,
+.overdue {
+  max-width: 78rem;
 }
 .due {
   color: #efc86d;
@@ -188,9 +267,10 @@
   display: block;
 }
 .done {
-  opacity: 0.58;
+  opacity: 1;
 }
 .done .cardHeader strong {
+  color: rgba(237, 244, 247, 0.78);
   text-decoration: line-through;
 }
 .card.none {
@@ -226,15 +306,6 @@
 }
 .anchor.high .tail {
   border-top-color: rgba(45, 26, 30, 0.97);
-}
-.statusMeta {
-  display: flex;
-  align-items: center;
-}
-.statusMeta img {
-  width: 10rem;
-  height: 10rem;
-  margin-right: 3rem;
 }
 
 .selected .marker {
@@ -272,8 +343,7 @@
     0 0 0 2rem rgba(94, 207, 245, 0.2),
     0 6rem 15rem rgba(0, 0, 0, 0.3);
 }
-.markerIcon,
-.statusMeta img {
+.markerIcon {
   opacity: 1;
 }
 .cardKind img {

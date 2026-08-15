@@ -26,25 +26,25 @@
 
 .notice strong {
   color: #fff1c8;
-  font-size: 11rem;
+  font-size: tokens.$font-control;
 }
 
 .notice span {
   margin-top: 3rem;
   color: rgba(255, 230, 179, 0.85);
-  font-size: 9rem;
+  font-size: tokens.$font-meta;
   line-height: 1.35;
 }
 
 .notice button {
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   flex: 0 0 auto;
   margin-left: 12rem;
   padding: 0 9rem;
   color: #062219;
   background-color: #64d9a4;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 
 // Keep the shared feedback mixin separate from the base button geometry.

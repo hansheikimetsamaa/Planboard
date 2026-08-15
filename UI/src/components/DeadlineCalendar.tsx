@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "cs2/ui";
-import { isValidDateInput } from "../model";
-import { DeadlineMode } from "../types/contracts";
+import { formatDateInput, isValidDateInput } from "../model";
+import { DateFormat, DeadlineMode } from "../types/contracts";
+import { useEscapeDismissal } from "./useEscapeDismissal";
 import styles from "./mainPanel.module.scss";
 const calendarMonths = [
   "January",
@@ -41,6 +42,7 @@ function addCalendarDays(value: string, days: number) {
 }
 export function DeadlineCalendar({
   deadlineMode,
+  dateFormat,
   value,
   currentDate,
   open,
@@ -49,6 +51,7 @@ export function DeadlineCalendar({
   overlayHost,
 }: {
   deadlineMode: DeadlineMode;
+  dateFormat: DateFormat;
   value: string;
   currentDate: string;
   open: boolean;
@@ -83,6 +86,14 @@ export function DeadlineCalendar({
   };
   const label = deadlineMode === "game" ? "In-game deadline" : "Real-life deadline";
   const context = deadlineMode === "game" ? "City today" : "Today";
+  useEscapeDismissal(
+    110,
+    () => {
+      onOpenChange(false);
+      return true;
+    },
+    open,
+  );
   // Render inside the editor host instead of the field so the popup clears the
   // panel's clipped grid while still closing when the editor background is clicked.
   const popup =
@@ -128,7 +139,7 @@ export function DeadlineCalendar({
               </div>
               <div className={styles.calendarFooter}>
                 <span>
-                  {context}: {reference}
+                  {context}: {formatDateInput(reference, dateFormat)}
                 </span>
                 <div>
                   <Button
@@ -179,7 +190,9 @@ export function DeadlineCalendar({
       >
         <span className={styles.calendarGlyph} aria-hidden="true"></span>
         <span>
-          {value ? `${deadlineMode === "game" ? "City" : "Real"} \u00B7 ${value}` : "No deadline"}
+          {value
+            ? `${deadlineMode === "game" ? "City" : "Real"} \u00B7 ${formatDateInput(value, dateFormat)}`
+            : "No deadline"}
         </span>
         <span>{open ? "-" : "+"}</span>
       </Button>

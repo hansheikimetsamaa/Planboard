@@ -1,32 +1,251 @@
 @use "../styles/interaction" as interaction;
 @use "../styles/tokens" as tokens;
 
-// Compact action row used by district context integration.
-.action {
+// Native inspector integration keeps its own small surface while reusing the
+// same semantic kind, status, and control sizing as the main Planboard panel.
+.section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8rem;
+  overflow: visible;
+  padding: 12rem 16rem 16rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: tokens.$font-control;
+}
+
+// The inspector owns the horizontal gutters. Extend only the hand-off divider so
+// it reads as the native full-width section boundary, without adding hairlines.
+.section::after {
+  position: absolute;
+  right: -16rem;
+  bottom: 0;
+  left: -16rem;
+  height: 2rem;
+  content: "";
+  background-color: rgba(255, 255, 255, 0.11);
+  pointer-events: none;
+}
+
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4rem 0;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 12rem;
+  gap: 8rem;
 }
 
-.action > *:last-child {
-  margin-left: 8rem;
+.header > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-// The action remains visually secondary to the native game context panel.
-.action > button {
-  min-height: 26rem;
+.header strong {
+  color: #edf4f7;
+  font-size: tokens.$font-control;
+}
+
+.header span,
+.empty,
+.entryText > span,
+.status {
+  color: rgba(204, 222, 231, 0.68);
+  font-size: tokens.$font-meta;
+}
+
+.addButton {
+  min-height: tokens.$compact-action-height;
+  flex: 0 0 auto;
   padding: 0 8rem;
   color: #bfefff;
   background-color: rgba(94, 207, 245, 0.1);
   border: 1rem solid rgba(94, 207, 245, 0.32);
   border-radius: tokens.$radius-compact;
+  font-size: tokens.$font-control;
   @include interaction.interactive-feedback;
 }
 
-.action > button:hover {
+.addButton:hover {
   color: #f4f9fc;
   background-color: rgba(94, 207, 245, 0.2);
+}
+
+.empty {
+  margin: 0;
+}
+
+.entries {
+  display: flex;
+  max-height: 188rem;
+  flex-direction: column;
+  gap: 4rem;
+  overflow-y: auto;
+  @include tokens.panel-scrollbar;
+}
+
+.entry {
+  min-height: 42rem;
+  display: flex;
+  align-items: center;
+  padding: 6rem 8rem;
+  background-color: rgba(17, 31, 40, 0.52);
+  border: 1rem solid transparent;
+  border-radius: tokens.$radius-control;
+}
+
+.entry:hover,
+.entry:focus-within {
+  background-color: rgba(32, 52, 63, 0.82);
+  border-color: rgba(94, 207, 245, 0.3);
+}
+
+.entryOpen {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  color: #edf4f7;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  @include interaction.interactive-feedback;
+}
+
+.kindBadge {
+  width: 28rem;
+  height: 28rem;
+  flex: 0 0 28rem;
+  // Gameface does not consistently honour flex gaps in injected inspector
+  // sections, so the text separation is an explicit, stable badge margin.
+  margin-right: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: tokens.$radius-control;
+}
+
+.kindBadge img {
+  width: 16rem;
+  height: 16rem;
+}
+
+.issue {
+  background-color: #ff7882;
+}
+
+.note {
+  background-color: #64d9a4;
+}
+
+.idea {
+  background-color: #f2bd58;
+}
+
+.entryText {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.entryText strong,
+.entryText > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entryText strong {
+  font-size: tokens.$font-control;
+  font-weight: 600;
+}
+
+.statusControl,
+.menuControl {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.statusControl {
+  width: 84rem;
+  justify-content: center;
+}
+
+.statusButton {
+  min-width: 76rem;
+  height: tokens.$compact-action-height;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5rem;
+  color: rgba(204, 222, 231, 0.68);
+  background: transparent;
+  border: 1rem solid transparent;
+  border-radius: tokens.$radius-compact;
+  font-size: tokens.$font-control;
+  @include interaction.interactive-feedback;
+}
+
+.statusButton:hover,
+.statusButton:focus,
+.statusButtonOpen {
+  color: #edf4f7;
+  background-color: rgba(94, 207, 245, 0.12);
+  border-color: rgba(94, 207, 245, 0.56);
+}
+
+.statusButton img {
+  width: 13rem;
+  height: 13rem;
+  flex: 0 0 13rem;
+  margin-right: 4rem;
+}
+
+.statusIndicator {
+  width: 5rem;
+  height: 5rem;
+  flex: 0 0 5rem;
+  margin: -3rem 0 0 5rem;
+  border-right: 1rem solid tokens.$accent;
+  border-bottom: 1rem solid tokens.$accent;
+  transform: rotate(45deg);
+}
+
+.statusButtonOpen .statusIndicator {
+  margin-top: 3rem;
+  transform: rotate(225deg);
+}
+
+.menuControl {
+  width: 30rem;
+  justify-content: flex-end;
+}
+
+.menuButton {
+  width: 26rem;
+  height: tokens.$compact-action-height;
+  padding: 0;
+  color: rgba(204, 222, 231, 0.68);
+  background: transparent;
+  border: 1rem solid transparent;
+  border-radius: tokens.$radius-compact;
+  font-size: tokens.$font-control;
+  line-height: 1;
+  opacity: 0.7;
+  @include interaction.interactive-feedback;
+}
+
+.entry:hover .menuButton,
+.entry:focus-within .menuButton,
+.menuButton:hover,
+.menuButton:focus {
+  color: #edf4f7;
+  background-color: rgba(255, 255, 255, 0.075);
+  border-color: rgba(196, 226, 238, 0.2);
+  opacity: 1;
 }

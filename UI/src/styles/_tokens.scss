@@ -7,18 +7,38 @@ $hover: rgba(255, 255, 255, 0.085);
 $line: rgba(196, 226, 238, 0.15);
 $text: #f4f9fc;
 $muted: rgba(220, 237, 245, 0.58);
+$text-disabled: rgba(220, 237, 245, 0.46);
 $accent: #5ecff5;
 $green: #64d9a4;
 $amber: #f0b65d;
 $red: #ff7d86;
 
-$font-meta: 9rem;
-$font-control: 10rem;
-$font-body: 12rem;
-$font-panel-title: 15rem;
-$action-height: 28rem;
-$action-min-width: 68rem;
-$compact-action-inset: 8rem;
+// Match the responsive type ladder provided by the native CS2 UI. The fallback
+// keeps every Planboard surface legible if it is ever mounted outside that root.
+// XXS is limited to non-essential badges; all readable supporting text begins at XS.
+$font-overline: var(--fontSizeXXS, 10rem);
+$font-meta: var(--fontSizeXS, 12rem);
+$font-control: var(--fontSizeS, 14rem);
+$font-body: calc(var(--fontSizeM, 16rem) + 2rem);
+// Field values are primary content, not compact control labels. Keep them in
+// step with body copy so typing and reading use the same comfortable scale.
+$font-field-value: $font-body;
+$font-section-title: var(--fontSizeXL, 20rem);
+$font-panel-title: var(--fontSizeXXL, 22rem);
+$font-display: var(--fontSizeXXXL, 24rem);
+
+// Larger text needs matching hit areas. These values are deliberately shared so
+// a control does not become cramped in one Planboard surface but roomy in another.
+$compact-action-height: 32rem;
+$control-height: 36rem;
+$title-input-height: 46rem;
+$task-row-height: 52rem;
+$task-kind-badge-size: 34rem;
+$calendar-day-height: 32rem;
+$map-card-min-width: 220rem;
+$action-height: $compact-action-height;
+$action-min-width: 76rem;
+$compact-action-inset: 10rem;
 
 // Radius scale: compact controls sit inside fields, fields sit inside cards.
 // Keeping this small prevents each component from inventing a near-identical corner shape.
@@ -46,9 +66,33 @@ $editor-gutter: 15rem;
 // Text actions always need a visible horizontal buffer. Icon-only actions use
 // their own square hit target instead of this mixin.
 @mixin compact-text-action {
-  min-height: $action-height;
+  min-height: $compact-action-height;
   padding-left: $compact-action-inset;
   padding-right: $compact-action-inset;
   border-radius: $radius-compact;
   white-space: nowrap;
+}
+
+// Gameface honours the standard scrollbar pseudo-elements. Keeping the treatment here
+// lets every scrollable Planboard editor reveal overflow in the same quiet, usable way.
+@mixin panel-scrollbar {
+  scrollbar-color: rgba(220, 237, 245, 0.6) transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    width: 6rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(220, 237, 245, 0.56);
+    border-radius: $radius-pill;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(244, 249, 252, 0.82);
+  }
 }

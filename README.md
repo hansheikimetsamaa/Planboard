@@ -16,10 +16,18 @@ one place, then attach them to the exact point, road, building, or district you 
 
 ## Availability and feedback
 
-Planboard 0.1.5 is publicly available. Feedback, bug reports, and feature ideas are welcome through
+Planboard 0.1.6 is available as a public beta. Feedback, bug reports, and feature ideas are welcome through
 [GitHub Issues](https://github.com/hansheikimetsamaa/Planboard/issues).
 
 ## Recent releases
+
+### 0.1.6 - 2026-08-15
+
+- Added direct pin placement, a focused draft, and safer Escape/discard handling.
+- Added several map pins to one task, including continuous **Add more pins** placement.
+- Added live district-centre notes and a Planboard section in the district inspector.
+- Improved category editing, scrolling, sticky notes, marker cards, pop-ups, and readable text sizing.
+- Completed tasks now hide from the map while remaining in the task list.
 
 ### 0.1.5 - 2026-08-13
 

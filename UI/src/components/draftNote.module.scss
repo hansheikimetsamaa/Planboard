@@ -9,22 +9,50 @@ $green: tokens.$green;
 $amber: tokens.$amber;
 $red: tokens.$red;
 .shell {
-  width: 380rem;
+  width: 420rem;
   max-width: 44vw;
 }
 .content {
   padding: 0;
   overflow: visible;
 }
-.header {
+.overlayHost {
+  min-height: 0;
+  flex: 1 1 auto;
+  position: relative;
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  overflow: hidden;
+}
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .header strong {
   color: $text;
   font-size: tokens.$font-panel-title;
   font-weight: 600;
   letter-spacing: 0.025em;
+}
+.closeButton {
+  width: 26rem;
+  height: 26rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: $text;
+  background-color: transparent;
+  border: 0;
+  border-radius: tokens.$radius-compact;
+  font-size: 24rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.08);
 }
 .sticky {
   display: flex;
@@ -55,11 +83,16 @@ $red: tokens.$red;
   border-color: $accent;
   background-color: rgba(255, 255, 255, 0.07);
 }
+.sticky > input::placeholder,
+.sticky textarea::placeholder {
+  color: rgba(220, 237, 245, 0.58);
+  opacity: 1;
+}
 .sticky > input {
   width: 100%;
-  height: 39rem;
+  height: tokens.$title-input-height;
   margin-bottom: 11rem;
-  font-size: 15rem;
+  font-size: tokens.$font-body;
   font-weight: 550;
 }
 .sticky > input.missing {
@@ -70,7 +103,7 @@ $red: tokens.$red;
   margin-bottom: 10rem;
 }
 .kinds > * {
-  height: 32rem;
+  height: tokens.$control-height;
   min-width: 0;
   flex: 1 1 auto;
   display: flex;
@@ -83,7 +116,7 @@ $red: tokens.$red;
   border-style: solid;
   border-color: rgba(196, 226, 238, 0.27);
   border-radius: tokens.$radius-compact;
-  font-size: 10rem;
+  font-size: tokens.$font-control;
   font-weight: 520;
 }
 .kinds > *:last-child {
@@ -100,14 +133,14 @@ $red: tokens.$red;
   background-color: rgba(94, 207, 245, 0.1);
 }
 .kinds b {
-  width: 18rem;
-  height: 18rem;
+  width: 22rem;
+  height: 22rem;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 5rem;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-overline;
 }
 .kinds .issue {
   color: #2a090c;
@@ -124,17 +157,19 @@ $red: tokens.$red;
 .categoryLabel {
   margin-bottom: 6rem;
   color: $muted;
-  font-size: 9rem;
+  font-size: tokens.$font-meta;
 }
 .categoryChips {
   display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
+  flex-wrap: nowrap;
   margin-bottom: 8rem;
 }
 .categoryChips > * {
-  height: 27rem;
-  flex: 0 0 auto;
-  margin: 0 5rem 5rem 0;
+  height: tokens.$compact-action-height;
+  min-width: 0;
+  flex: 1 1 0;
+  margin: 0 4rem 0 0;
   padding: 0 10rem;
   color: $muted;
   background-color: transparent;
@@ -142,55 +177,54 @@ $red: tokens.$red;
   border-style: solid;
   border-color: $line;
   border-radius: tokens.$radius-pill;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 .categoryChips > *:hover {
   color: $text;
   background-color: rgba(255, 255, 255, 0.06);
+}
+.categoryChips > *:last-child {
+  margin-right: 0;
 }
 .categoryChips .chipActive {
   color: $accent;
   border-color: rgba(94, 207, 245, 0.5);
   background-color: rgba(94, 207, 245, 0.1);
 }
-.customCategory {
-  height: 34rem;
-  margin: -2rem 0 9rem;
+.categoryChip {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.detailsToggle {
-  width: 100%;
-  @include tokens.compact-text-action;
-  height: 31rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  color: rgba(220, 237, 245, 0.72);
-  background-color: transparent;
-  border: 0;
-  font-size: 10rem;
-}
-.detailsToggle:hover {
-  color: $text;
-  background-color: transparent;
-}
-.detailsToggle span {
-  width: 18rem;
+
+.categoryAction {
+  width: tokens.$compact-action-height;
+  min-width: tokens.$compact-action-height;
+  flex: 0 0 tokens.$compact-action-height;
+  padding: 0;
   color: $accent;
-  font-size: 15rem;
+  font-size: tokens.$font-section-title;
+  font-weight: 650;
+  line-height: 1;
 }
-.detailsToggle strong {
-  font-weight: 550;
+
+.customCategoryField {
+  width: 100%;
+  height: tokens.$control-height;
+  margin: 0 0 10rem;
 }
+
 .details {
   display: flex;
   flex-direction: column;
   padding-top: 6rem;
 }
+
 .details textarea {
   width: 100%;
-  height: 76rem;
-  min-height: 76rem;
-  max-height: 76rem;
+  height: 108rem;
+  min-height: 108rem;
+  max-height: 108rem;
   resize: none;
 }
 .actions {
@@ -203,19 +237,19 @@ $red: tokens.$red;
   border-top-style: solid;
   border-top-color: $line;
 }
-.actions > * {
+.actions > button {
   @include tokens.action-button;
   margin-left: 6rem;
 }
-.actions > *:first-child {
+.actions > button:first-child {
   color: $muted;
   background-color: transparent;
 }
-.actions > *:first-child:hover {
+.actions > button:first-child:hover {
   color: $text;
   background-color: rgba(255, 255, 255, 0.05);
 }
-.actions > *:last-child {
+.actions > button:last-child {
   color: #062219;
   background-color: $green;
 }
@@ -224,12 +258,6 @@ $red: tokens.$red;
   height: 13rem;
   display: block;
   pointer-events: none;
-}
-.detailsToggle span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12rem;
 }
 .shell {
   min-width: 360rem;
@@ -249,6 +277,7 @@ $red: tokens.$red;
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
+  @include tokens.panel-scrollbar;
 }
 .resizeHandle {
   position: absolute;
@@ -270,11 +299,47 @@ $red: tokens.$red;
   border-bottom: 2rem solid rgba(220, 237, 245, 0.5);
 }
 
-.compactContent {
-  height: auto;
+.discardConfirmation {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
 }
-.compactContent .sticky {
+
+.discardConfirmation > span {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: tokens.$muted;
+  font-size: tokens.$font-control;
+}
+
+.discardConfirmButton {
+  color: tokens.$red;
+}
+
+.discardConfirmation > button {
+  @include tokens.action-button;
+  min-width: 0;
   flex: 0 0 auto;
+}
+
+.discardConfirmation > button + button {
+  margin-left: 6rem;
+}
+
+.discardConfirmation > button:first-of-type {
+  color: $muted;
+  background-color: transparent;
+}
+
+.discardConfirmation > button:first-of-type:hover {
+  color: $text;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.discardConfirmation > .discardConfirmButton {
+  color: #2a080d;
+  background-color: tokens.$red;
 }
 
 // Pinned-note controls use the same high-contrast hover and focus treatment as the main panel.
@@ -288,8 +353,9 @@ $red: tokens.$red;
 }
 .kinds > *,
 .categoryChips > *,
-.detailsToggle,
-.actions > *,
+.closeButton,
+.actions > button,
+.discardConfirmation > button,
 .resizeHandle {
   @include interaction.interactive-feedback;
 }

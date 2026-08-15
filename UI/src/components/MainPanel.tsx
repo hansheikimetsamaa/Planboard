@@ -11,6 +11,7 @@ import {
   currentRealDate$,
   dataIssues$,
   dataReadOnly$,
+  dateFormat$,
   deadlineMode$,
   entries$,
   panelVisible$,
@@ -39,6 +40,12 @@ import { Editor, EditorPayload, NewEditor, type CreateEntry } from "./TaskEditor
 import { baseFilters, FilterPanel, initialFilters } from "./FilterPanel";
 import { EntryRow, ListPopoverKind, ScrollableTaskList } from "./TaskList";
 import { usePanelGeometry } from "./usePanelGeometry";
+import {
+  blurTextInputOnEscape,
+  dispatchBack,
+  EscapeDismissalScope,
+  useEscapeDismissal,
+} from "./useEscapeDismissal";
 import styles from "./mainPanel.module.scss";
 
 const emptyEntries: EntryView[] = [];
@@ -54,9 +61,11 @@ type ActiveListPopover = { entryId: number; kind: ListPopoverKind } | null;
 export function MainPanel() {
   const visible = useValue(panelVisible$) ?? false;
   return visible ? (
-    <Boundary>
-      <PanelContent />
-    </Boundary>
+    <EscapeDismissalScope>
+      <Boundary>
+        <PanelContent />
+      </Boundary>
+    </EscapeDismissalScope>
   ) : null;
 }
 
@@ -104,6 +113,7 @@ function PanelContent() {
   const undoAvailable = useValue(undoAvailable$) ?? false;
   const layoutRevision = useValue(windowLayoutRevision$) ?? 0;
   const deadlineMode = useValue(deadlineMode$) ?? "real";
+  const dateFormat = useValue(dateFormat$) ?? "iso";
   const realToday = useValue(currentRealDate$) ?? "";
   const gameToday = useValue(currentGameDate$) ?? "";
 
@@ -214,6 +224,28 @@ function PanelContent() {
 
   useEffect(() => setVisibleCount(listPageSize), [filters, categoryChip]);
 
+  // Escape is intentionally lower priority than menus and calendars. Once no child surface is
+  // open, placement cancels before the panel closes so the native tool never remains orphaned.
+  useEscapeDismissal(10, () => {
+    const placing =
+      placementState >= PlacementState.ChoosingLocation &&
+      placementState <= PlacementState.InvalidPreview;
+    if (placing) {
+      trigger(Binding.group, Binding.cancelPlacement);
+      return true;
+    }
+    if (pendingDelete !== null) {
+      setPendingDelete(null);
+      return true;
+    }
+    if (showFilters) {
+      setShowFilters(false);
+      return true;
+    }
+    trigger(Binding.group, Binding.setPanelVisible, false);
+    return true;
+  });
+
   const resetFilters = () => {
     setFilters(baseFilters);
     setCategoryChip(null);
@@ -307,10 +339,17 @@ function PanelContent() {
       header={
         <div className={styles.title}>
           <strong>{t("Title", "Planboard")}</strong>
+          <Button
+            aria-label="Close Planboard"
+            className={styles.closeButton}
+            variant="flat"
+            onSelect={dispatchBack}
+          >
+            ×
+          </Button>
         </div>
       }
-      showCloseHint
-      onClose={() => trigger(Binding.group, Binding.setPanelVisible, false)}
+      showCloseHint={false}
     >
       <div ref={listOverlayHost} className={styles.panel}>
         {readOnly ? (
@@ -357,6 +396,7 @@ function PanelContent() {
                     aria-label={t("SearchPlaceholder", "Search tasks and notes")}
                     placeholder={t("SearchPlaceholder", "Search tasks and notes")}
                     onChange={(event) => setFilters({ ...filters, query: event.target.value })}
+                    onKeyDown={blurTextInputOnEscape}
                   />
                   <Button
                     variant="flat"
@@ -467,6 +507,7 @@ function PanelContent() {
               <div className={styles.detailView}>
                 <NewEditor
                   deadlineMode={deadlineMode}
+                  dateFormat={dateFormat}
                   realToday={realToday}
                   gameToday={gameToday}
                   onCancel={() => setCreating(false)}
@@ -481,6 +522,7 @@ function PanelContent() {
                   key={selected.id}
                   entry={selected}
                   deadlineMode={deadlineMode}
+                  dateFormat={dateFormat}
                   realToday={realToday}
                   gameToday={gameToday}
                   onBack={() => {

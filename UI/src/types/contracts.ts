@@ -8,14 +8,18 @@ export const Binding = {
   selectedEntryId: "selectedEntryId",
   placementState: "placementState",
   placementEntryId: "placementEntryId",
+  continuousPlacement: "continuousPlacement",
   draftEntryId: "draftEntryId",
   districtSelected: "districtSelected",
+  districtEntries: "districtEntries",
+  districtSelectionRevision: "districtSelectionRevision",
   dataIssues: "dataIssues",
   mapDisplayMode: "mapDisplayMode",
   projectedMarkers: "projectedMarkers",
   undoAvailable: "undoAvailable",
   windowLayoutRevision: "windowLayoutRevision",
   deadlineMode: "deadlineMode",
+  dateFormat: "dateFormat",
   toolbarLocation: "toolbarLocation",
   currentRealDate: "currentRealDate",
   currentGameDate: "currentGameDate",
@@ -31,8 +35,13 @@ export const Binding = {
   convertIdea: "convertIdea",
   selectEntry: "selectEntry",
   beginPlacement: "beginPlacement",
+  addLocation: "addLocation",
+  moveLocation: "moveLocation",
+  beginMarkerDrag: "beginMarkerDrag",
+  finishMarkerDrag: "finishMarkerDrag",
   cancelPlacement: "cancelPlacement",
   removeLocation: "removeLocation",
+  navigateToLocation: "navigateToLocation",
   createDistrictEntry: "createDistrictEntry",
   navigateToEntry: "navigateToEntry",
   setPanelVisible: "setPanelVisible",
@@ -110,6 +119,18 @@ export interface EntryView {
   gameOverdue: boolean;
   spatialKind: SpatialKind;
   hasLocation: boolean;
+  locationCount: number;
+  x: number;
+  y: number;
+  z: number;
+  linkState: LinkState;
+  hasDistrict: boolean;
+  markerMoved: boolean;
+  locations: TaskLocationView[];
+}
+
+export interface TaskLocationView {
+  id: number;
   x: number;
   y: number;
   z: number;
@@ -126,6 +147,7 @@ export interface DataIssueView {
 
 export type MainTab = "all" | "open" | "doing" | "done";
 export type DeadlineMode = "real" | "game";
+export type DateFormat = "iso" | "dayMonthYear" | "monthDayYear";
 export type ToolbarLocation = "topLeft" | "footer";
 export type SortMode = "updated" | "priority" | "category" | "deadline";
 
@@ -145,7 +167,10 @@ export interface Filters {
 
 export interface ProjectedMarkerView {
   id: number;
+  locationId: number;
   screenX: number;
   screenY: number;
   visible: boolean;
+  isDistrict: boolean;
+  districtCount: number;
 }

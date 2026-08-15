@@ -54,14 +54,6 @@
   margin: 0 2rem;
 }
 
-// Footer controls open upward above the bottom HUD. The same palette opens
-// downward from GameTopLeft so it remains entirely inside the game viewport.
-.topLeftGroup .kindPalette {
-  top: 46rem;
-  bottom: auto;
-  left: 0;
-}
-
 .topLeftGroup .placementToast {
   top: 47rem;
   bottom: auto;
@@ -84,21 +76,23 @@
 }
 
 .footerButtonNeutral {
-  background-color: rgba(220, 241, 248, 0.16);
+  background-color: transparent;
   border-color: rgba(220, 241, 248, 0.42);
 }
 
-.footerButtonActive {
-  background-color: rgba(94, 207, 245, 0.28);
+.footerButton.footerButtonActive {
+  background-color: rgba(13, 65, 79, 0.96);
   border-color: rgba(145, 225, 249, 0.72);
-  box-shadow:
-    inset 0 1rem 0 rgba(255, 255, 255, 0.22),
-    0 0 9rem rgba(94, 207, 245, 0.22);
+  box-shadow: 0 0 9rem rgba(94, 207, 245, 0.16);
 }
 
 .footerButton:hover {
-  background-color: rgba(94, 207, 245, 0.25);
+  background-color: rgba(220, 241, 248, 0.1);
   border-color: rgba(175, 234, 250, 0.84);
+}
+
+.footerButton.footerButtonActive:hover {
+  background-color: rgba(19, 82, 100, 0.98);
 }
 
 .footerButton:focus {
@@ -106,7 +100,22 @@
 }
 
 .footerButton:active {
-  background-color: rgba(94, 207, 245, 0.32);
+  background-color: rgba(220, 241, 248, 0.14);
+}
+
+.footerButton.footerButtonActive:active {
+  background-color: rgba(10, 54, 66, 0.98);
+}
+
+// The eye already communicates visibility through its glyph and border. Keeping
+// its surface transparent prevents a third coloured tile in the toolbar group.
+.footerButton.visibilityButton,
+.footerButton.visibilityButton.footerButtonNeutral,
+.footerButton.visibilityButton.footerButtonActive,
+.footerButton.visibilityButton:hover,
+.footerButton.visibilityButton:active {
+  background-color: transparent;
+  box-shadow: none;
 }
 
 .footerButton > img,
@@ -141,101 +150,15 @@
   align-items: center;
 }
 
-.kindPalette {
-  position: absolute;
-  z-index: 1200;
-  left: -5rem;
-  bottom: 46rem;
-  width: 154rem;
-  display: flex;
-  flex-direction: column;
-  padding: 7rem;
-  background-color: rgba(8, 20, 29, 0.98);
-  border: 1rem solid rgba(200, 230, 242, 0.22);
-  border-radius: tokens.$radius-card;
-  box-shadow: 0 10rem 30rem rgba(0, 0, 0, 0.45);
-}
-
-.kindPalette > span {
-  padding: 4rem 7rem 7rem;
-  color: rgba(225, 240, 248, 0.55);
-  font-size: 9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.kindPalette > button {
-  height: 34rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-bottom: 3rem;
-  padding: 0 8rem;
-  color: #f4f9fc;
-  background-color: rgba(255, 255, 255, 0.045);
-  border: 1rem solid transparent;
-  border-radius: tokens.$radius-compact;
-  font-size: 11rem;
-}
-
-// Palette hover is intentionally paint-only: its surface already communicates task kind.
-.kindPalette > button:hover,
-.kindPalette > button:focus {
-  color: #f4f9fc;
-  background-color: rgba(255, 255, 255, 0.045);
-  border-color: rgba(220, 241, 248, 0.46);
-  box-shadow: none;
-  transform: none;
-  outline: 0;
-}
-
-.kindPalette b {
-  width: 23rem;
-  height: 23rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 7rem;
-  border: 1rem solid rgba(255, 255, 255, 0.2);
-  border-radius: tokens.$radius-compact;
-  box-shadow: inset 0 1rem 0 rgba(255, 255, 255, 0.18);
-}
-
-.issue b {
-  color: #2a090c;
-  background-color: #ff7d86;
-}
-
-.note b {
-  color: #062219;
-  background-color: #64d9a4;
-}
-
-.idea b {
-  color: #291a02;
-  background-color: #f0b65d;
-}
-
-.kindPalette b img {
-  width: 15rem;
-  height: 15rem;
-  display: block;
-  margin: 0;
-  pointer-events: none;
-}
-
-.kindPalette > button:hover b img,
-.kindPalette > button:focus b img {
-  opacity: 1;
-}
 .placementToast {
   position: absolute;
   z-index: 1190;
   left: -5rem;
   bottom: 47rem;
-  width: 220rem;
+  width: 260rem;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10rem;
   padding: 9rem 11rem;
   color: #f4f9fc;
   background-color: rgba(8, 20, 29, 0.94);
@@ -244,32 +167,37 @@
   box-shadow: 0 8rem 24rem rgba(0, 0, 0, 0.35);
 }
 
+.placementCopy {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.placementDone {
+  min-height: tokens.$compact-action-height;
+  flex: 0 0 auto;
+  padding: 0 tokens.$compact-action-inset;
+  color: #f4f9fc;
+  background-color: rgba(94, 207, 245, 0.16);
+  border: 1rem solid rgba(94, 207, 245, 0.44);
+  border-radius: tokens.$radius-compact;
+  font-size: tokens.$font-control;
+}
+
+.placementDone:hover,
+.placementDone:focus {
+  background-color: rgba(94, 207, 245, 0.28);
+}
+
 .placementToast strong {
-  font-size: 11rem;
+  font-size: tokens.$font-control;
 }
 
 .placementToast span {
   margin-top: 3rem;
   color: rgba(220, 237, 245, 0.62);
-  font-size: 9rem;
-}
-
-.displayControl > span {
-  position: absolute;
-  right: -2rem;
-  bottom: -1rem;
-  min-width: 16rem;
-  height: 9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 2rem;
-  color: #07141c;
-  background-color: #67d5f3;
-  border-radius: tokens.$radius-compact;
-  font-size: 6rem;
-  font-weight: 750;
-  pointer-events: none;
+  font-size: tokens.$font-meta;
 }
 
 .eyeOuter,

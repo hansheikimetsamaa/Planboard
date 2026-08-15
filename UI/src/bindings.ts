@@ -4,6 +4,7 @@ import { bindValue } from "cs2/api";
 import {
   Binding,
   DataIssueView,
+  DateFormat,
   DeadlineMode,
   EntryView,
   MapDisplayMode,
@@ -21,8 +22,19 @@ export const placementState$ = bindValue<PlacementState>(
   PlacementState.Inactive,
 );
 export const placementEntryId$ = bindValue<number>(Binding.group, Binding.placementEntryId, 0);
+export const continuousPlacement$ = bindValue<boolean>(
+  Binding.group,
+  Binding.continuousPlacement,
+  false,
+);
 export const draftEntryId$ = bindValue<number>(Binding.group, Binding.draftEntryId, 0);
 export const districtSelected$ = bindValue<boolean>(Binding.group, Binding.districtSelected, false);
+export const districtEntries$ = bindValue<EntryView[]>(Binding.group, Binding.districtEntries, []);
+export const districtSelectionRevision$ = bindValue<number>(
+  Binding.group,
+  Binding.districtSelectionRevision,
+  0,
+);
 export const dataIssues$ = bindValue<DataIssueView[]>(Binding.group, Binding.dataIssues, []);
 export const mapDisplayMode$ = bindValue<MapDisplayMode>(
   Binding.group,
@@ -43,6 +55,7 @@ export const windowLayoutRevision$ = bindValue<number>(
   0,
 );
 export const deadlineMode$ = bindValue<DeadlineMode>(Binding.group, Binding.deadlineMode, "real");
+export const dateFormat$ = bindValue<DateFormat>(Binding.group, Binding.dateFormat, "iso");
 export const toolbarLocation$ = bindValue<ToolbarLocation>(
   Binding.group,
   Binding.toolbarLocation,

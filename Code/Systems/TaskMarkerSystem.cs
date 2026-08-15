@@ -12,7 +12,7 @@ namespace Planboard.Systems
 {
     public partial class TaskMarkerSystem : GameSystemBase
     {
-        private readonly Dictionary<int, Entity> _markers = new();
+        private readonly Dictionary<MarkerKey, Entity> _markers = new();
         private TaskDataSystem _data;
         private TimeSystem _time;
         private uint _renderedRevision = uint.MaxValue;
@@ -32,55 +32,108 @@ namespace Planboard.Systems
             long realDateTicks = System.DateTime.Today.Ticks;
             long gameDateTicks = _time.GetCurrentDateTime().Date.Ticks;
             bool showCompleted = Mod.Settings.ShowCompletedMarkers;
-            if (_renderedRevision == _data.Revision && _lastRealDateTicks == realDateTicks &&
-                _lastGameDateTicks == gameDateTicks && _lastShowCompleted == showCompleted) return;
-            RebuildMarkers();
-            _renderedRevision = _data.Revision;
-            _lastRealDateTicks = realDateTicks;
-            _lastGameDateTicks = gameDateTicks;
-            _lastShowCompleted = showCompleted;
+            bool needsRebuild = _renderedRevision != _data.Revision || _lastRealDateTicks != realDateTicks ||
+                _lastGameDateTicks != gameDateTicks || _lastShowCompleted != showCompleted;
+            if (needsRebuild)
+            {
+                RebuildMarkers();
+                _renderedRevision = _data.Revision;
+                _lastRealDateTicks = realDateTicks;
+                _lastGameDateTicks = gameDateTicks;
+                _lastShowCompleted = showCompleted;
+            }
+
+            // District geometry can move without Planboard data changing. Refresh only those
+            // runtime transforms so every marker remains centred without rewriting its fallback.
+            RefreshDistrictAnchors();
         }
 
-        public bool TryGetMarker(int entryId, out Entity entity)
+        public bool TryGetMarker(int entryId, int locationId, out Entity entity)
         {
-            return _markers.TryGetValue(entryId, out entity) && EntityManager.Exists(entity);
+            return _markers.TryGetValue(new MarkerKey(entryId, locationId), out entity) && EntityManager.Exists(entity);
         }
 
         private void RebuildMarkers()
         {
-            HashSet<int> desired = new();
+            HashSet<MarkerKey> desired = new();
             foreach (TaskEntry entry in _data.Entries)
             {
-                if (!entry.HasLocation) continue;
                 if (entry.Status == EntryStatus.Done && !Mod.Settings.ShowCompletedMarkers) continue;
-                desired.Add(entry.Id);
-                if (!_markers.TryGetValue(entry.Id, out Entity marker) || !EntityManager.Exists(marker))
+                foreach (TaskLocation location in entry.Locations)
                 {
-                    marker = EntityManager.CreateEntity();
-                    EntityManager.AddComponentData(marker, new RuntimeTaskMarker());
-                    EntityManager.AddComponentData(marker, new Transform(Unity.Mathematics.float3.zero, Unity.Mathematics.quaternion.identity));
-                    _markers[entry.Id] = marker;
+                    if (!location.HasLocation) continue;
+                    MarkerKey key = new(entry.Id, location.Id);
+                    desired.Add(key);
+                    if (!_markers.TryGetValue(key, out Entity marker) || !EntityManager.Exists(marker))
+                    {
+                        marker = EntityManager.CreateEntity();
+                        EntityManager.AddComponentData(marker, new RuntimeTaskMarker());
+                        EntityManager.AddComponentData(marker, new Transform(Unity.Mathematics.float3.zero, Unity.Mathematics.quaternion.identity));
+                        _markers[key] = marker;
+                    }
+
+                    EntityManager.SetComponentData(marker, new RuntimeTaskMarker
+                    {
+                        EntryId = entry.Id,
+                        LocationId = location.Id,
+                        Category = entry.Category,
+                        Kind = entry.Kind,
+                        Priority = entry.Priority,
+                        Status = entry.Status,
+                        RealOverdue = entry.HasRealDueDate && entry.RealDueDateTicks < System.DateTime.Today.Ticks && entry.Status != EntryStatus.Done,
+                        GameOverdue = entry.HasGameDueDate && entry.GameDueDateTicks < _time.GetCurrentDateTime().Date.Ticks && entry.Status != EntryStatus.Done,
+                        IsDistrict = location.LinkedDistrict != Entity.Null,
+                        LinkedDistrict = location.LinkedDistrict,
+                    });
+                    EntityManager.SetComponentData(marker, new Transform(_data.GetResolvedPosition(location), quaternion.identity));
                 }
-                EntityManager.SetComponentData(marker, new RuntimeTaskMarker
-                {
-                    EntryId = entry.Id,
-                    Category = entry.Category,
-                    Kind = entry.Kind,
-                    Priority = entry.Priority,
-                    Status = entry.Status,
-                    RealOverdue = entry.HasRealDueDate && entry.RealDueDateTicks < System.DateTime.Today.Ticks && entry.Status != EntryStatus.Done,
-                    GameOverdue = entry.HasGameDueDate && entry.GameDueDateTicks < _time.GetCurrentDateTime().Date.Ticks && entry.Status != EntryStatus.Done,
-                });
-                EntityManager.SetComponentData(marker, new Transform(entry.Position, quaternion.identity));
             }
 
-            foreach (int entryId in new List<int>(_markers.Keys))
+            foreach (MarkerKey key in new List<MarkerKey>(_markers.Keys))
             {
-                if (desired.Contains(entryId)) continue;
-                Entity marker = _markers[entryId];
+                if (desired.Contains(key)) continue;
+                Entity marker = _markers[key];
                 if (EntityManager.Exists(marker)) EntityManager.DestroyEntity(marker);
-                _markers.Remove(entryId);
+                _markers.Remove(key);
             }
+        }
+
+        private void RefreshDistrictAnchors()
+        {
+            foreach (TaskEntry entry in _data.Entries)
+            {
+                foreach (TaskLocation location in entry.Locations)
+                {
+                    MarkerKey key = new(entry.Id, location.Id);
+                    if (location.LinkedDistrict == Entity.Null ||
+                        !_markers.TryGetValue(key, out Entity marker) || !EntityManager.Exists(marker))
+                    {
+                        continue;
+                    }
+
+                    bool hasLiveDistrict = _data.TryGetDistrictCenter(location, out float3 position);
+                    if (!hasLiveDistrict) continue;
+                    Transform transform = EntityManager.GetComponentData<Transform>(marker);
+                    if (math.distancesq(transform.m_Position, position) <= 0.0001f) continue;
+                    EntityManager.SetComponentData(marker, new Transform(position, quaternion.identity));
+                }
+            }
+        }
+
+        private readonly struct MarkerKey : System.IEquatable<MarkerKey>
+        {
+            public MarkerKey(int entryId, int locationId)
+            {
+                EntryId = entryId;
+                LocationId = locationId;
+            }
+
+            public int EntryId { get; }
+            public int LocationId { get; }
+
+            public bool Equals(MarkerKey other) => EntryId == other.EntryId && LocationId == other.LocationId;
+            public override bool Equals(object obj) => obj is MarkerKey other && Equals(other);
+            public override int GetHashCode() => (EntryId * 397) ^ LocationId;
         }
     }
 }

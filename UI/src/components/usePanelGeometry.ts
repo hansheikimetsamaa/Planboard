@@ -15,8 +15,8 @@ type Constraints = {
 // Positions are stored as viewport ratios so a saved layout remains usable after
 // the game window changes size or moves between displays.
 const defaults: Record<PanelKind, StoredGeometry> = {
-  main: { width: 650, height: 750, x: 0.62, y: 0.12 },
-  sticky: { width: 380, height: 430, x: 0.7, y: 0.2 },
+  main: { width: 770, height: 815, x: 0.62, y: 0.12 },
+  sticky: { width: 440, height: 640, x: 0.7, y: 0.2 },
 };
 
 const storageKey = (key: PanelKind) => `planboard.geometry.${key}`;
@@ -29,9 +29,24 @@ function readGeometry(key: PanelKind): StoredGeometry {
     // Upgrade only previous automatic defaults; manually chosen dimensions remain intact.
     if (
       key === "main" &&
-      (parsed?.height === 500 || parsed?.height === 560 || parsed?.height === 690)
+      (parsed?.height === 500 ||
+        parsed?.height === 560 ||
+        parsed?.height === 690 ||
+        parsed?.height === 750 ||
+        parsed?.height === 790 ||
+        parsed?.height === 810)
     )
       parsed.height = defaults.main.height;
+    if (key === "main" && (parsed?.width === 650 || parsed?.width === 670 || parsed?.width === 720))
+      parsed.width = defaults.main.width;
+    if (
+      key === "sticky" &&
+      ((parsed?.width === 380 && parsed?.height === 430) ||
+        (parsed?.width === 440 && parsed?.height === 560))
+    ) {
+      parsed.width = defaults.sticky.width;
+      parsed.height = defaults.sticky.height;
+    }
     return { ...defaults[key], ...parsed };
   } catch {
     return defaults[key];

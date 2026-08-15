@@ -1,11 +1,11 @@
 // Renders the map-toolbar controls for opening Planboard and map display modes.
 
-import { useEffect, useRef, useState } from "react";
 import { trigger, useValue } from "cs2/api";
 import { Button, Tooltip } from "cs2/ui";
 import notepadIcon from "../images/kind-note.svg";
 import pinIcon from "../images/add-pin.svg";
 import {
+  continuousPlacement$,
   draftEntryId$,
   mapDisplayMode$,
   panelVisible$,
@@ -20,7 +20,6 @@ import {
   ToolbarLocation,
 } from "../types/contracts";
 import { usePlanboardLocale } from "../labels";
-import { KindIcon } from "./KindIcon";
 import styles from "./mapToolbar.module.scss";
 
 // The map-display control is intentionally inline: its three visual states are local to this toolbar.
@@ -53,39 +52,13 @@ export function MapToolbar({ location = "footer" }: { location?: ToolbarLocation
   const visible = useValue(panelVisible$) ?? false;
   const mapDisplayMode = useValue(mapDisplayMode$) ?? MapDisplayMode.Pins;
   const placementState = useValue(placementState$) ?? PlacementState.Inactive;
+  const continuousPlacement = useValue(continuousPlacement$) ?? false;
   const draftId = useValue(draftEntryId$) ?? 0;
   const toolbarLocation = useValue(toolbarLocation$) ?? "topLeft";
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [placingKind, setPlacingKind] = useState<EntryKind | null>(null);
-  const pinControl = useRef<HTMLDivElement>(null);
-  const { t, kindLabels } = usePlanboardLocale();
+  const { t } = usePlanboardLocale();
   const placing =
     placementState >= PlacementState.ChoosingLocation &&
     placementState <= PlacementState.InvalidPreview;
-
-  // Placement owns the pin workflow, so the palette cannot remain open behind it.
-  useEffect(() => {
-    if (placing || draftId > 0) setPaletteOpen(false);
-    if (placementState === PlacementState.Applied || placementState === PlacementState.Cancelled)
-      setPlacingKind(null);
-  }, [draftId, placing, placementState]);
-
-  // Gameface does not provide browser-native popover dismissal for this control.
-  useEffect(() => {
-    if (!paletteOpen) return;
-    const dismiss = (event: MouseEvent) => {
-      if (!pinControl.current?.contains(event.target as Node)) setPaletteOpen(false);
-    };
-    window.addEventListener("mousedown", dismiss);
-    return () => window.removeEventListener("mousedown", dismiss);
-  }, [paletteOpen]);
-
-  // Draft creation stays on the C# side so it can remain transient until placement succeeds.
-  const begin = (kind: EntryKind) => {
-    setPlacingKind(kind);
-    setPaletteOpen(false);
-    trigger(Binding.group, Binding.createPinnedDraft, kind);
-  };
 
   const visibilityLabel =
     mapDisplayMode === MapDisplayMode.Hidden
@@ -101,53 +74,49 @@ export function MapToolbar({ location = "footer" }: { location?: ToolbarLocation
 
   return (
     <div className={location === "topLeft" ? styles.topLeftGroup : styles.footerGroup}>
-      <div ref={pinControl} className={styles.pinControl}>
-        <Tooltip tooltip={placing ? "Cancel pin placement" : "Add a map pin"}>
+      <div className={styles.pinControl}>
+        <Tooltip
+          tooltip={
+            placing
+              ? continuousPlacement
+                ? "Done adding pins"
+                : "Cancel pin placement"
+              : "Add a map pin"
+          }
+        >
           <Button
             src={pinIcon}
             variant={buttonVariant}
-            selected={placing || paletteOpen}
-            className={`${styles.footerButton} ${placing || paletteOpen ? styles.footerButtonActive : styles.footerButtonNeutral}`}
+            selected={placing}
+            className={`${styles.footerButton} ${placing ? styles.footerButtonActive : styles.footerButtonNeutral}`}
             onSelect={() => {
               if (placing) trigger(Binding.group, Binding.cancelPlacement);
-              else if (draftId === 0) setPaletteOpen(!paletteOpen);
+              // This draft remains transient until Save. The temporary Note kind keeps the
+              // first click focused on location while the later editor keeps type editable.
+              else if (draftId === 0)
+                trigger(Binding.group, Binding.createPinnedDraft, EntryKind.Task);
             }}
           />
         </Tooltip>
-        {paletteOpen && (
-          <div className={styles.kindPalette}>
-            <span>Place on map</span>
-            <Button variant="flat" className={styles.issue} onSelect={() => begin(EntryKind.Issue)}>
-              <b>
-                <KindIcon kind={EntryKind.Issue} onLight />
-              </b>
-              {kindLabels[EntryKind.Issue]}
-            </Button>
-            <Button variant="flat" className={styles.note} onSelect={() => begin(EntryKind.Task)}>
-              <b>
-                <KindIcon kind={EntryKind.Task} onLight />
-              </b>
-              {kindLabels[EntryKind.Task]}
-            </Button>
-            <Button variant="flat" className={styles.idea} onSelect={() => begin(EntryKind.Idea)}>
-              <b>
-                <KindIcon kind={EntryKind.Idea} onLight />
-              </b>
-              {kindLabels[EntryKind.Idea]}
-            </Button>
-          </div>
-        )}
         {placing && (
           <div className={styles.placementToast}>
-            <strong>
-              Place{" "}
-              {placingKind === EntryKind.Issue
-                ? "issue"
-                : placingKind === EntryKind.Idea
-                  ? "idea"
-                  : "note"}
-            </strong>
-            <span>Click a location on the map - right-click to cancel</span>
+            <div className={styles.placementCopy}>
+              <strong>{continuousPlacement ? "Add more pins" : "Place map pin"}</strong>
+              <span>
+                {continuousPlacement
+                  ? "Click each location, then choose Done"
+                  : "Click a location on the map - right-click to cancel"}
+              </span>
+            </div>
+            {continuousPlacement && (
+              <Button
+                variant="flat"
+                className={styles.placementDone}
+                onSelect={() => trigger(Binding.group, Binding.cancelPlacement)}
+              >
+                Done
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -163,13 +132,6 @@ export function MapToolbar({ location = "footer" }: { location?: ToolbarLocation
             <VisibilityIcon mode={mapDisplayMode} />
           </Button>
         </Tooltip>
-        <span>
-          {mapDisplayMode === MapDisplayMode.Hidden
-            ? "OFF"
-            : mapDisplayMode === MapDisplayMode.Pins
-              ? "PIN"
-              : "ALL"}
-        </span>
       </div>
       <span className={styles.separator} />
       <Tooltip tooltip={t("ToggleTooltip", "Open Planboard")}>

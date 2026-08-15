@@ -13,12 +13,13 @@ import { createPortal } from "react-dom";
 import { Binding, EntryKind, EntryStatus, EntryView } from "../types/contracts";
 import { KindIcon } from "./KindIcon";
 import { StatusIcon } from "./StatusIcon";
+import { blurTextInputOnEscape, useEscapeDismissal } from "./useEscapeDismissal";
 import styles from "./mainPanel.module.scss";
 
 type ScrollMetrics = { clientHeight: number; scrollHeight: number; scrollTop: number };
 export type ListPopoverKind = "status" | "actions";
 
-function ListPopover({
+export function ListPopover({
   anchor,
   overlayHost,
   className,
@@ -28,7 +29,7 @@ function ListPopover({
   children,
 }: {
   anchor: RefObject<HTMLElement>;
-  overlayHost: RefObject<HTMLDivElement>;
+  overlayHost: RefObject<HTMLElement>;
   className: string;
   height: number;
   minimumWidth: number;
@@ -79,6 +80,11 @@ function ListPopover({
     window.addEventListener("mousedown", dismiss);
     return () => window.removeEventListener("mousedown", dismiss);
   }, [anchor, onClose]);
+
+  useEscapeDismissal(100, () => {
+    onClose();
+    return true;
+  });
 
   return position && overlayHost.current
     ? createPortal(
@@ -256,6 +262,15 @@ export function EntryRow({
     openTimer.current = null;
     setEditing(true);
   };
+  useEscapeDismissal(
+    100,
+    () => {
+      setTitle(entry.title);
+      setEditing(false);
+      return true;
+    },
+    editing,
+  );
   const saveTitle = () => {
     const value = title.trim();
     setEditing(false);
@@ -287,11 +302,8 @@ export function EntryRow({
           onChange={(e) => setTitle(e.target.value)}
           onBlur={saveTitle}
           onKeyDown={(e) => {
+            if (blurTextInputOnEscape(e)) return;
             if (e.key === "Enter") saveTitle();
-            if (e.key === "Escape") {
-              setTitle(entry.title);
-              setEditing(false);
-            }
           }}
         />
       ) : (
@@ -302,7 +314,7 @@ export function EntryRow({
           onDoubleClick={beginRename}
         >
           <span
-            className={`${styles.kindBadge} ${entry.kind === EntryKind.Issue ? styles.kindIssue : entry.kind === EntryKind.Idea ? styles.kindIdea : styles.kindNote}`}
+            className={`${styles.kindBadge} ${entry.kind === EntryKind.Issue ? styles.kindIssue : entry.kind === EntryKind.Idea ? styles.kindIdea : styles.kindNote} ${entry.hasDistrict ? styles.districtBadge : ""}`}
           >
             <KindIcon kind={entry.kind} onLight />
           </span>

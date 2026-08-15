@@ -6,12 +6,13 @@ $hover: tokens.$hover;
 $line: tokens.$line;
 $text: tokens.$text;
 $muted: tokens.$muted;
+$disabled: tokens.$text-disabled;
 $accent: tokens.$accent;
 $green: tokens.$green;
 $amber: tokens.$amber;
 $red: tokens.$red;
 .panelShell {
-  width: 650rem;
+  width: 770rem;
   max-width: 88vw;
 }
 .panelContent {
@@ -19,8 +20,10 @@ $red: tokens.$red;
   overflow: hidden;
 }
 .title {
+  width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 .title strong {
   color: $text;
@@ -28,11 +31,29 @@ $red: tokens.$red;
   font-weight: 600;
   letter-spacing: 0.025em;
 }
+.closeButton {
+  width: 26rem;
+  height: 26rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: $text;
+  background-color: transparent;
+  border: 0;
+  border-radius: tokens.$radius-compact;
+  font-size: 24rem;
+  font-weight: 600;
+  line-height: 1;
+}
+.closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
 .panel {
   position: relative;
-  width: 650rem;
+  width: 770rem;
   max-width: 88vw;
-  height: 560rem;
+  height: 625rem;
   max-height: 76vh;
   display: flex;
   flex-direction: column;
@@ -90,13 +111,13 @@ $red: tokens.$red;
   flex-direction: column;
 }
 .listHeader strong {
-  font-size: 18rem;
+  font-size: tokens.$font-section-title;
   font-weight: 600;
 }
 .listHeader span {
   margin-top: 3rem;
   color: $muted;
-  font-size: 10rem;
+  font-size: tokens.$font-meta;
 }
 .plusButton {
   width: 34rem;
@@ -128,7 +149,7 @@ $red: tokens.$red;
   border-radius: tokens.$radius-pill;
 }
 .tabs > * {
-  height: 29rem;
+  height: tokens.$compact-action-height;
   display: flex;
   align-items: center;
   padding: 0 10rem;
@@ -136,6 +157,7 @@ $red: tokens.$red;
   background-color: transparent;
   border: 0;
   border-radius: tokens.$radius-pill;
+  font-size: tokens.$font-control;
   text-decoration: none;
 }
 .tabs > *:hover {
@@ -145,8 +167,8 @@ $red: tokens.$red;
 .tabs > * > span:last-child {
   min-width: 17rem;
   margin-left: 6rem;
-  color: rgba(220, 237, 245, 0.42);
-  font-size: 9rem;
+  color: $muted;
+  font-size: tokens.$font-meta;
   text-align: center;
 }
 .tabs .active {
@@ -160,6 +182,7 @@ $red: tokens.$red;
   @include tokens.compact-text-action;
   color: $accent;
   background-color: transparent;
+  font-size: tokens.$font-control;
 }
 .filterButton:hover {
   background-color: $hover;
@@ -171,14 +194,14 @@ $red: tokens.$red;
   padding: 7rem 12rem 2rem;
 }
 .chips > * {
-  height: 25rem;
+  height: tokens.$compact-action-height;
   flex: 0 0 auto;
   margin-right: 5rem;
   padding: 0 10rem;
   color: $muted;
   background-color: $surface;
   border-radius: tokens.$radius-pill;
-  font-size: 10rem;
+  font-size: tokens.$font-control;
 }
 .chips > *:hover {
   color: $text;
@@ -245,7 +268,7 @@ $red: tokens.$red;
 }
 .resetFilters {
   min-width: 54rem;
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   flex: 0 0 auto;
   margin-left: 8rem;
   padding: 0 8rem;
@@ -265,7 +288,7 @@ $red: tokens.$red;
   flex-direction: column;
   position: relative;
   color: $muted;
-  font-size: 10rem;
+  font-size: tokens.$font-meta;
 }
 .field > span,
 .segmentField > span,
@@ -275,7 +298,7 @@ $red: tokens.$red;
 .choice,
 .categoryTrigger {
   width: 100%;
-  height: 30rem;
+  height: tokens.$control-height;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -284,6 +307,7 @@ $red: tokens.$red;
   background-color: $surface;
   border: 0;
   border-radius: tokens.$radius-control;
+  font-size: tokens.$font-control;
   text-decoration: none;
 }
 .choice:hover,
@@ -295,6 +319,9 @@ $red: tokens.$red;
   margin-left: 7rem;
   color: $accent;
 }
+.categoryTrigger > span:last-child {
+  margin-left: auto;
+}
 .segmented {
   display: flex;
   padding: 2rem;
@@ -303,14 +330,14 @@ $red: tokens.$red;
 }
 .segmented > * {
   min-width: 0;
-  height: 28rem;
+  height: tokens.$compact-action-height;
   flex: 1 1 auto;
   padding: 0 7rem;
   color: $muted;
   background-color: transparent;
   border: 0;
   border-radius: tokens.$radius-compact;
-  font-size: 10rem;
+  font-size: tokens.$font-control;
   text-decoration: none;
 }
 .segmented > *:hover {
@@ -388,15 +415,26 @@ $red: tokens.$red;
   color: #ffe4e6 !important;
   background-color: rgba(255, 125, 134, 0.29) !important;
 }
-.categoryMenu {
+.categoryOverlay {
   position: absolute;
-  z-index: 30;
-  top: 50rem;
-  right: 0;
+  z-index: 90;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 42rem 12rem 46rem;
+  box-sizing: border-box;
+  background-color: transparent;
+}
+.categoryMenu {
   width: 300rem;
+  max-width: 100%;
+  max-height: 100%;
   display: flex;
   flex-wrap: wrap;
+  overflow-y: auto;
   padding: 7rem;
+  box-sizing: border-box;
   background-color: rgba(8, 20, 29, 0.99);
   border-width: 1rem;
   border-style: solid;
@@ -406,25 +444,25 @@ $red: tokens.$red;
 }
 .categoryMenu > button {
   width: 46%;
-  height: 27rem;
+  min-height: tokens.$compact-action-height;
   flex: 1 0 46%;
   justify-content: flex-start;
   margin: 2rem;
   color: rgba(240, 248, 252, 0.78);
   background-color: $surface;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 .categoryMenu > button:hover {
   background-color: $hover;
 }
 .categoryMenu > input {
   width: 100%;
-  height: 31rem;
+  height: tokens.$control-height;
   margin: 4rem 2rem 2rem;
 }
 .toggle {
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -514,9 +552,9 @@ $red: tokens.$red;
 }
 .taskRow {
   width: 100%;
-  height: 44rem;
-  min-height: 44rem;
-  flex: 0 0 44rem;
+  height: tokens.$task-row-height;
+  min-height: tokens.$task-row-height;
+  flex: 0 0 tokens.$task-row-height;
   display: flex;
   align-items: center;
   margin-bottom: 2rem;
@@ -529,7 +567,7 @@ $red: tokens.$red;
 }
 .rowOpen {
   min-width: 0;
-  height: 44rem;
+  height: tokens.$task-row-height;
   flex: 1 1 auto;
   display: flex;
   align-items: center;
@@ -544,16 +582,19 @@ $red: tokens.$red;
   background-color: transparent;
 }
 .kindBadge {
-  width: 30rem;
-  height: 30rem;
-  flex: 0 0 30rem;
+  width: tokens.$task-kind-badge-size;
+  height: tokens.$task-kind-badge-size;
+  flex: 0 0 tokens.$task-kind-badge-size;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 7rem;
   border-radius: tokens.$radius-compact;
-  font-size: 12rem;
+  font-size: tokens.$font-control;
   font-weight: 700;
+}
+.districtBadge {
+  border-radius: tokens.$radius-control;
 }
 .kindIssue {
   color: #2a090c;
@@ -569,7 +610,7 @@ $red: tokens.$red;
 }
 .taskMain {
   min-width: 0;
-  height: 30rem;
+  height: 34rem;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -583,30 +624,31 @@ $red: tokens.$red;
 }
 .taskMain strong {
   color: $text;
-  font-size: 12rem;
+  font-size: tokens.$font-control;
   font-weight: 550;
-  line-height: 14rem;
+  line-height: 18rem;
 }
 .taskMain span {
   color: $muted;
-  font-size: 9rem;
-  line-height: 10rem;
+  font-size: tokens.$font-meta;
+  line-height: 14rem;
 }
 .rowStatus {
-  min-width: 68rem;
-  height: 28rem;
+  min-width: 80rem;
+  height: tokens.$compact-action-height;
   padding: 0 7rem;
   color: $muted;
   background-color: rgba(255, 255, 255, 0.025);
   border: 1rem solid transparent;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
   text-align: left;
 }
 .taskDone {
-  opacity: 0.55;
+  opacity: 1;
 }
 .taskDone .taskMain strong {
+  color: rgba(244, 249, 252, 0.78);
   text-decoration: line-through;
 }
 .empty {
@@ -622,11 +664,11 @@ $red: tokens.$red;
 .empty strong {
   margin-bottom: 6rem;
   color: rgba(244, 249, 252, 0.82);
-  font-size: 14rem;
+  font-size: tokens.$font-section-title;
   font-weight: 500;
 }
 .empty span {
-  font-size: 10rem;
+  font-size: tokens.$font-control;
 }
 .footer {
   flex: 0 0 auto;
@@ -656,17 +698,21 @@ $red: tokens.$red;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  // A fixed scroll container lets a long pin list and the editor scroll independently.
+  // Gameface only paints its scrollbar reliably when this surface explicitly scrolls.
+  overflow-x: hidden;
+  overflow-y: scroll;
   padding: 13rem tokens.$editor-gutter 18rem;
   box-sizing: border-box;
+  @include tokens.panel-scrollbar;
 }
 .editor > * {
   margin-bottom: 11rem;
 }
 .titleInput {
   width: 100%;
-  height: 39rem;
-  font-size: 16rem;
+  height: tokens.$title-input-height;
+  font-size: tokens.$font-body;
   font-weight: 600;
 }
 .grid {
@@ -685,10 +731,13 @@ $red: tokens.$red;
 }
 .descriptionInput {
   width: 100%;
-  height: 118rem;
-  min-height: 118rem;
-  max-height: 118rem;
+  height: 136rem;
+  min-height: 136rem;
+  max-height: 136rem;
   resize: none;
+}
+.placeholderField {
+  margin-top: 0;
 }
 .issues {
   flex: 0 0 auto;
@@ -792,12 +841,13 @@ $red: tokens.$red;
   @include tokens.compact-text-action;
   color: $accent;
   background-color: transparent;
+  font-size: tokens.$font-body;
 }
 .deleteButton {
   @include tokens.compact-text-action;
   color: rgba(255, 156, 163, 0.72);
   background-color: transparent;
-  font-size: 10rem;
+  font-size: tokens.$font-body;
 }
 .deleteButton:hover {
   color: #ff9ca3;
@@ -814,14 +864,14 @@ $red: tokens.$red;
   border-bottom-width: 1rem;
   border-bottom-style: solid;
   border-bottom-color: rgba(255, 125, 134, 0.2);
-  font-size: 10rem;
+  font-size: tokens.$font-control;
 }
 .deleteConfirmActions {
   display: flex;
   margin-left: 8rem;
 }
 .deleteConfirmActions > * {
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   margin-left: 5rem;
   padding: 0 9rem;
   border-radius: tokens.$radius-compact;
@@ -839,12 +889,17 @@ $red: tokens.$red;
 }
 .locationCard {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   padding: 9rem 0 10rem;
   border-bottom-width: 1rem;
   border-bottom-style: solid;
   border-bottom-color: $line;
+}
+.locationHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .locationInfo {
   min-width: 0;
@@ -879,13 +934,13 @@ $red: tokens.$red;
 }
 .locationText strong {
   color: rgba(244, 249, 252, 0.9);
-  font-size: 10rem;
+  font-size: tokens.$font-control;
   font-weight: 550;
 }
 .locationText span {
   margin-top: 2rem;
   color: $muted;
-  font-size: 9rem;
+  font-size: tokens.$font-meta;
 }
 .locationActions {
   flex: 0 0 auto;
@@ -893,23 +948,76 @@ $red: tokens.$red;
   margin-left: 10rem;
 }
 .locationActions > * {
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   margin-left: 5rem;
   padding: 0 9rem;
   color: $accent;
   background-color: transparent;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-body;
 }
 .locationActions > *:hover {
   background-color: rgba(255, 255, 255, 0.06);
 }
+.locationList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  margin-top: 9rem;
+}
+.locationListOverflow {
+  // Four compact rows remain visible. Longer pin collections scroll here rather
+  // than stretching the editor and pushing the task metadata out of reach.
+  height: 172rem;
+  min-height: 0;
+  max-height: 172rem;
+  overflow-y: scroll;
+  @include tokens.panel-scrollbar;
+}
+.locationRow {
+  min-height: tokens.$compact-action-height;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8rem;
+  padding: 4rem 6rem 4rem 9rem;
+  color: $muted;
+  background-color: rgba(255, 255, 255, 0.035);
+  border-radius: tokens.$radius-control;
+  font-size: tokens.$font-meta;
+}
+.locationRow > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.locationRow > div {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 3rem;
+}
+.locationRow button {
+  min-height: 24rem;
+  padding: 0 6rem;
+  color: $accent;
+  background-color: transparent;
+  border-radius: tokens.$radius-compact;
+  font-size: tokens.$font-meta;
+}
+.locationRow button:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+.locationRow .locationRemove {
+  color: #ffb3b8;
+}
 .removePin {
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   color: #ffb3b8;
   background-color: rgba(255, 125, 134, 0.06);
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-body;
 }
 .autosave {
   flex: 0 0 auto;
@@ -920,7 +1028,7 @@ $red: tokens.$red;
   border-top-width: 1rem;
   border-top-style: solid;
   border-top-color: $line;
-  font-size: 9rem;
+  font-size: tokens.$font-meta;
 }
 .autosave span {
   width: 6rem;
@@ -979,9 +1087,9 @@ $red: tokens.$red;
 }
 .rowStatusControl {
   position: relative;
-  height: 44rem;
-  width: 78rem;
-  flex: 0 0 78rem;
+  height: tokens.$task-row-height;
+  width: 90rem;
+  flex: 0 0 90rem;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -1013,13 +1121,14 @@ $red: tokens.$red;
   box-shadow: 0 8rem 22rem rgba(0, 0, 0, 0.45);
 }
 .rowStatusMenu button {
-  height: 26rem;
+  min-height: tokens.$compact-action-height;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   padding: 0 5rem;
   color: $muted;
   background: transparent;
+  font-size: tokens.$font-control;
   line-height: 1;
 }
 .rowStatusMenu button:hover,
@@ -1095,12 +1204,12 @@ $red: tokens.$red;
 .rowRename {
   min-width: 0;
   flex: 1 1 auto;
-  height: 34rem;
-  margin: 5rem 4rem 5rem 38rem;
+  height: tokens.$control-height;
+  margin: 5rem 4rem 5rem 42rem;
 }
 .rowMenuButton {
   width: 26rem;
-  height: 28rem;
+  height: tokens.$compact-action-height;
   flex: 0 0 26rem;
   align-self: center;
   margin-right: 2rem;
@@ -1114,9 +1223,9 @@ $red: tokens.$red;
   opacity: 0.55;
 }
 .rowMenuControl {
-  width: 30rem;
-  height: 44rem;
-  flex: 0 0 30rem;
+  width: 34rem;
+  height: tokens.$task-row-height;
+  flex: 0 0 34rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1143,13 +1252,14 @@ $red: tokens.$red;
   box-shadow: 0 8rem 22rem rgba(0, 0, 0, 0.45);
 }
 .rowMenu button {
-  height: 27rem;
+  min-height: tokens.$compact-action-height;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   padding: 0 6rem;
   color: $text;
   background: transparent;
+  font-size: tokens.$font-control;
   white-space: nowrap;
 }
 .rowMenu button:last-child {
@@ -1194,22 +1304,22 @@ $red: tokens.$red;
 }
 .searchInput {
   width: 190rem;
-  height: 30rem;
+  height: tokens.$control-height;
   flex: 0 1 190rem;
   margin-left: auto;
   margin-right: 9rem;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  font-size: 10rem !important;
+  font-size: tokens.$font-control !important;
 }
 .showMore {
   width: 100%;
-  height: 32rem;
+  height: tokens.$compact-action-height;
   margin-top: 5rem;
   color: $accent;
   background-color: rgba(94, 207, 245, 0.06);
   border-radius: tokens.$radius-compact;
-  font-size: 10rem;
+  font-size: tokens.$font-control;
 }
 .showMore:hover {
   background-color: rgba(94, 207, 245, 0.11);
@@ -1222,7 +1332,7 @@ $red: tokens.$red;
 }
 .newLabel {
   color: $muted;
-  font-size: 10rem;
+  font-size: tokens.$font-meta;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -1233,13 +1343,13 @@ $red: tokens.$red;
   background-color: rgba(240, 182, 93, 0.12);
   border: 1rem solid rgba(240, 182, 93, 0.45);
   border-radius: tokens.$radius-card;
-  font-size: 11rem;
+  font-size: tokens.$font-control;
   line-height: 1.45;
 }
 .readOnlyNotice strong {
   display: block;
   color: #fff1c8;
-  font-size: 13rem;
+  font-size: tokens.$font-section-title;
 }
 .readOnlyNotice p {
   margin: 9rem 0 0;
@@ -1251,13 +1361,13 @@ $red: tokens.$red;
   bottom: 12rem;
 }
 .issues > button {
-  height: 28rem;
+  min-height: tokens.$compact-action-height;
   padding: 0 9rem;
   color: #ffe2a6;
   background-color: rgba(50, 37, 17, 0.96);
   border: 1rem solid rgba(240, 182, 93, 0.35);
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 .dataIssuesPanel {
   max-width: 330rem;
@@ -1274,14 +1384,14 @@ $red: tokens.$red;
   flex-direction: column;
   padding: 7rem 8rem;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-meta;
   line-height: 1.35;
 }
 .dataIssuesPanel > div + div {
   margin-top: 4rem;
 }
 .dataIssuesPanel strong {
-  font-size: 10rem;
+  font-size: tokens.$font-control;
 }
 .dataIssuesPanel span {
   margin-top: 2rem;
@@ -1290,7 +1400,7 @@ $red: tokens.$red;
 .dataIssuesPanel small {
   margin-top: 4rem;
   color: rgba(255, 226, 166, 0.78);
-  font-size: 8rem;
+  font-size: tokens.$font-meta;
 }
 .dataIssueWarning {
   background-color: rgba(240, 182, 93, 0.09);
@@ -1310,7 +1420,7 @@ $red: tokens.$red;
   background-color: rgba(255, 125, 134, 0.08);
   border: 1rem solid rgba(255, 125, 134, 0.2);
   border-radius: tokens.$radius-control;
-  font-size: 10rem;
+  font-size: tokens.$font-control;
 }
 .createActions {
   flex: 0 0 auto;
@@ -1318,22 +1428,33 @@ $red: tokens.$red;
   align-items: center;
   justify-content: flex-end;
   padding: 9rem 13rem;
+  color: $text;
+  background-color: tokens.$panel-footer-background;
   border-top: 1rem solid $line;
 }
-.createActions > * {
-  height: 32rem;
+.createActions > button {
+  @include tokens.action-button;
   margin-left: 7rem;
-  padding: 0 13rem;
-  border-radius: tokens.$radius-compact;
 }
-.createActions > *:first-child {
+.createActions > button:first-of-type {
   color: $muted;
   background-color: transparent;
 }
-.createActions > *:last-child {
+.createActions > button:last-child {
   color: #06261c;
   background-color: $green;
-} /* Calendar is a local dialog: it never leaves or clips against the Planboard panel. */
+}
+.createDiscardMessage {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: $muted;
+  font-size: tokens.$font-control;
+}
+.createActions > .createDiscardButton {
+  color: #2a080d;
+  background-color: $red;
+}
+/* Calendar is a local dialog: it never leaves or clips against the Planboard panel. */
 .categoryDeadline {
   min-width: 0;
   display: flex;
@@ -1345,19 +1466,23 @@ $red: tokens.$red;
   min-width: 0;
   flex: 1 1 0;
 }
+.categoryDeadline .categoryTrigger,
+.categoryDeadline .deadlineTrigger {
+  font-size: tokens.$font-field-value;
+}
 .deadlineCalendar {
   min-width: 0;
   display: flex;
   flex-direction: column;
   color: $muted;
-  font-size: 10rem;
+  font-size: tokens.$font-meta;
 }
 .deadlineCalendar > span:first-child {
   margin-bottom: 4rem;
 }
 .deadlineTrigger {
   width: 100%;
-  height: 30rem;
+  height: tokens.$control-height;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -1365,6 +1490,7 @@ $red: tokens.$red;
   color: $text;
   background-color: $surface;
   border-radius: tokens.$radius-control;
+  font-size: tokens.$font-field-value;
   text-align: left;
 }
 .deadlineTrigger:hover {
@@ -1441,12 +1567,12 @@ $red: tokens.$red;
 }
 .calendarHeader strong {
   color: $text;
-  font-size: 11rem;
+  font-size: tokens.$font-control;
   font-weight: 550;
 }
 .calendarHeader button {
   width: 26rem;
-  height: 25rem;
+  height: tokens.$compact-action-height;
   padding: 0;
   color: $accent;
   background-color: $surface;
@@ -1472,24 +1598,24 @@ $red: tokens.$red;
   box-sizing: border-box;
 }
 .calendarWeekdays span {
-  height: 18rem;
-  color: rgba(220, 237, 245, 0.46);
-  font-size: 8rem;
+  height: 20rem;
+  color: $muted;
+  font-size: tokens.$font-meta;
   text-align: center;
 }
 .calendarDay {
-  height: 27rem;
+  height: tokens.$calendar-day-height;
   padding: 0;
   color: $text;
   background-color: transparent;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 .calendarDay:hover {
   background-color: $hover;
 }
 .calendarOutside {
-  color: rgba(220, 237, 245, 0.26);
+  color: $disabled;
 }
 .calendarToday {
   box-shadow: inset 0 0 0 1rem rgba(94, 207, 245, 0.52);
@@ -1507,20 +1633,20 @@ $red: tokens.$red;
   padding-top: 7rem;
   color: rgba(220, 237, 245, 0.58);
   border-top: 1rem solid $line;
-  font-size: 9rem;
+  font-size: tokens.$font-meta;
 }
 .calendarFooter > div {
   display: flex;
   align-items: center;
 }
 .calendarFooter button {
-  height: 25rem;
+  height: tokens.$compact-action-height;
   margin-left: 4rem;
   padding: 0 7rem;
   color: $accent;
   background-color: transparent;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 .calendarFooter button:hover {
   background-color: $hover;
@@ -1557,13 +1683,13 @@ $red: tokens.$red;
   box-shadow: 0 8rem 22rem rgba(0, 0, 0, 0.45);
 }
 .choiceMenu > button {
-  min-height: 27rem;
+  min-height: tokens.$compact-action-height;
   justify-content: flex-start;
   padding: 0 8rem;
   color: $text;
   background-color: transparent;
   border-radius: tokens.$radius-compact;
-  font-size: 9rem;
+  font-size: tokens.$font-control;
 }
 .choiceMenu > button:hover {
   background-color: $hover;

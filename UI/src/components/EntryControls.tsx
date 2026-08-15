@@ -1,10 +1,12 @@
 // Contains reusable selectors and controls for task metadata fields.
 
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "cs2/ui";
 import { EntryCategory, EntryKind, EntryPriority, EntryStatus } from "../types/contracts";
 import { KindIcon } from "./KindIcon";
 import { StatusIcon } from "./StatusIcon";
+import { blurTextInputOnEscape, useEscapeDismissal } from "./useEscapeDismissal";
 import styles from "./mainPanel.module.scss";
 
 export type Option<T extends string | number> = {
@@ -38,6 +40,15 @@ export function Choice<T extends string | number>({
     window.addEventListener("mousedown", dismiss);
     return () => window.removeEventListener("mousedown", dismiss);
   }, [open]);
+
+  useEscapeDismissal(
+    100,
+    () => {
+      setOpen(false);
+      return true;
+    },
+    open,
+  );
 
   return (
     <div ref={root} className={`${styles.field} ${styles.choiceField}`}>
@@ -193,6 +204,7 @@ export function CategoryPicker({
   onChange,
   onCustom,
   onOpenChange,
+  overlayHost,
 }: {
   value: EntryCategory;
   custom: string;
@@ -201,6 +213,7 @@ export function CategoryPicker({
   onChange: (value: EntryCategory) => void;
   onCustom: (value: string) => void;
   onOpenChange: (open: boolean) => void;
+  overlayHost: { current: HTMLDivElement | null };
 }) {
   const current = custom.trim() || labels[value] || labels[EntryCategory.General];
   return (
@@ -214,22 +227,63 @@ export function CategoryPicker({
         {current}
         <span>{open ? "-" : "+"}</span>
       </Button>
-      {open && (
-        <div className={styles.categoryMenu}>
-          {labels.map((entryLabel, category) => (
-            <Button
-              key={entryLabel}
-              variant="flat"
-              selected={!custom && category === value}
-              onSelect={() => {
-                onChange(category as EntryCategory);
-                onCustom("");
-                onOpenChange(false);
-              }}
-            >
-              {entryLabel}
-            </Button>
-          ))}
+      <CategoryMenu
+        value={value}
+        custom={custom}
+        labels={labels}
+        open={open}
+        onChange={onChange}
+        onCustom={onCustom}
+        onOpenChange={onOpenChange}
+        overlayHost={overlayHost}
+      />
+    </div>
+  );
+}
+
+// Category menus must escape the editor grid rather than compete with its layout. Keeping the
+// portal here gives the draft and full editors the same outside-click and Escape behaviour.
+export function CategoryMenu({
+  value,
+  custom,
+  labels,
+  open,
+  onChange,
+  onCustom,
+  onOpenChange,
+  overlayHost,
+  includeCustomInput = true,
+}: {
+  value: EntryCategory;
+  custom: string;
+  labels: string[];
+  open: boolean;
+  onChange: (value: EntryCategory) => void;
+  onCustom: (value: string) => void;
+  onOpenChange: (open: boolean) => void;
+  overlayHost: { current: HTMLDivElement | null };
+  includeCustomInput?: boolean;
+}) {
+  if (!open || !overlayHost.current) return null;
+
+  return createPortal(
+    <div className={styles.categoryOverlay} onMouseDown={() => onOpenChange(false)}>
+      <div className={styles.categoryMenu} onMouseDown={(event) => event.stopPropagation()}>
+        {labels.map((entryLabel, category) => (
+          <Button
+            key={entryLabel}
+            variant="flat"
+            selected={!custom && category === value}
+            onSelect={() => {
+              onChange(category as EntryCategory);
+              onCustom("");
+              onOpenChange(false);
+            }}
+          >
+            {entryLabel}
+          </Button>
+        ))}
+        {includeCustomInput && (
           <input
             type="text"
             aria-label="Custom category"
@@ -240,10 +294,12 @@ export function CategoryPicker({
               onCustom(event.target.value);
               onChange(EntryCategory.General);
             }}
+            onKeyDown={blurTextInputOnEscape}
           />
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </div>,
+    overlayHost.current,
   );
 }
 

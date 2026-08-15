@@ -39,6 +39,9 @@ namespace Planboard
         public const string CancelPlacementAction = "CancelPlanboardPlacement";
         public const string RealLifeDeadlineMode = "real";
         public const string InGameDeadlineMode = "game";
+        public const string IsoDateFormat = "iso";
+        public const string DayMonthYearDateFormat = "dayMonthYear";
+        public const string MonthDayYearDateFormat = "monthDayYear";
         public const string TopLeftToolbarLocation = "topLeft";
         public const string FooterToolbarLocation = "footer";
 
@@ -85,6 +88,10 @@ namespace Planboard
         [SettingsUIDropdown(typeof(Settings), nameof(GetDeadlineModeOptions))]
         public string DeadlineMode { get; set; } = RealLifeDeadlineMode;
 
+        [SettingsUISection(GeneralTab, PlanningSection)]
+        [SettingsUIDropdown(typeof(Settings), nameof(GetDateFormatOptions))]
+        public string DateFormat { get; set; } = IsoDateFormat;
+
         [SettingsUISection(GeneralTab, InterfaceSection)]
         [SettingsUIDropdown(typeof(Settings), nameof(GetToolbarLocationOptions))]
         public string ToolbarLocation { get; set; } = TopLeftToolbarLocation;
@@ -105,6 +112,16 @@ namespace Planboard
             {
                 new DropdownItem<string> { value = TopLeftToolbarLocation, displayName = LocalizedString.Value("Top-left toolbar") },
                 new DropdownItem<string> { value = FooterToolbarLocation, displayName = LocalizedString.Value("Footer toolbar") }
+            };
+        }
+
+        public static DropdownItem<string>[] GetDateFormatOptions()
+        {
+            return new[]
+            {
+                new DropdownItem<string> { value = IsoDateFormat, displayName = LocalizedString.Value("YYYY-MM-DD (ISO)") },
+                new DropdownItem<string> { value = DayMonthYearDateFormat, displayName = LocalizedString.Value("DD/MM/YYYY") },
+                new DropdownItem<string> { value = MonthDayYearDateFormat, displayName = LocalizedString.Value("MM/DD/YYYY") }
             };
         }
 
@@ -213,6 +230,7 @@ namespace Planboard
             ShowAllTitles = false;
             UseVanillaToolBindings = true;
             DeadlineMode = RealLifeDeadlineMode;
+            DateFormat = IsoDateFormat;
             ToolbarLocation = TopLeftToolbarLocation;
             ResetBindings = true;
         }
@@ -265,6 +283,11 @@ namespace Planboard
                     "Choose whether Planboard deadlines follow the real-life calendar " +
                     "or the city simulation calendar."
                 },
+                { _settings.GetOptionLabelLocaleID(nameof(Settings.DateFormat)), "Date format" },
+                {
+                    _settings.GetOptionDescLocaleID(nameof(Settings.DateFormat)),
+                    "Choose how Planboard shows dates. Stored deadlines and sorting stay unchanged."
+                },
                 { _settings.GetOptionLabelLocaleID(nameof(Settings.ToolbarLocation)), "Toolbar location" },
                 {
                     _settings.GetOptionDescLocaleID(nameof(Settings.ToolbarLocation)),
@@ -284,7 +307,11 @@ namespace Planboard
                 { _settings.GetBindingMapLocaleID(), "Planboard" },
                 { "Planboard.UI.Title", "Planboard" },
                 { "Planboard.UI.Add", "Add task" },
-                { "Planboard.UI.AddDistrict", "Add to Planboard" },
+                { "Planboard.UI.AddDistrict", "Add note" },
+                { "Planboard.UI.DistrictPlanboard", "Planboard" },
+                { "Planboard.UI.DistrictItem", "item" },
+                { "Planboard.UI.DistrictItems", "items" },
+                { "Planboard.UI.DistrictEmpty", "No Planboard items in this district yet." },
                 { "Planboard.UI.Empty", "No entries match the current view." },
                 { "Planboard.UI.Place", "Place on map" },
                 { "Planboard.UI.Move", "Move marker" },
@@ -344,7 +371,7 @@ namespace Planboard
                 { "Planboard.Priority.3", "High" },
                 { "Planboard.Category.0", "Traffic" },
                 { "Planboard.Category.1", "Roads" },
-                { "Planboard.Category.2", "Public Transport" },
+                { "Planboard.Category.2", "Transit" },
                 { "Planboard.Category.3", "Walking & Cycling" },
                 { "Planboard.Category.4", "Zoning & Development" },
                 { "Planboard.Category.5", "City Services" },

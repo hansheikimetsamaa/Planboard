@@ -47,10 +47,10 @@ test("public release identity and metadata stay Planboard-only", async () => {
     assert.equal(source.includes(forbiddenLower), false);
   }
   assert.match(project, /<RootNamespace>Planboard<\/RootNamespace>/);
-  assert.match(project, /<Version>0\.1\.5<\/Version>/);
-  assert.match(project, /<AssemblyVersion>0\.1\.5\.0<\/AssemblyVersion>/);
-  assert.equal(packageJson.version, "0.1.5");
-  assert.match(publish, /<ModVersion Value="0\.1\.5" \/>/);
+  assert.match(project, /<Version>0\.1\.6<\/Version>/);
+  assert.match(project, /<AssemblyVersion>0\.1\.6\.0<\/AssemblyVersion>/);
+  assert.equal(packageJson.version, "0.1.6");
+  assert.match(publish, /<ModVersion Value="0\.1\.6" \/>/);
   assert.match(mod, /const string Id = "planboard"/);
   assert.match(contracts, /group: "planboard"/);
   assert.match(labels, /`Planboard\.UI\.\$\{key\}`/);
@@ -58,7 +58,7 @@ test("public release identity and metadata stay Planboard-only", async () => {
   assert.match(publish, /Planboard is a location-aware planning board/);
   assert.match(publish, /<Thumbnail Value="Properties\/Thumbnail\.png" \/>/);
   assert.doesNotMatch(publish, /<Screenshot Value=/);
-  assert.match(publish, /0\.1\.5 - 2026-08-13/);
+  assert.match(publish, /0\.1\.6 - 2026-08-15/);
   assert.doesNotMatch(publish, /See (LongDescription|Changelog)\.md/);
   assert.match(ignore, /^Inspiration\/$/m);
   await read("../Code/LongDescription.md");
@@ -146,7 +146,8 @@ test("interactive icon styling is shared across Planboard surfaces", async () =>
   assert.match(toolbar, /footerButton > img[\s\S]*pointer-events: none/);
   assert.match(toolbarComponent, /<Button[\s\S]*src=\{pinIcon\}/);
   assert.match(toolbarComponent, /<Button[\s\S]*src=\{notepadIcon\}/);
-  assert.match(toolbarComponent, /KindIcon[\s\S]*onLight/);
+  assert.match(toolbarComponent, /Binding\.createPinnedDraft, EntryKind\.Task/);
+  assert.doesNotMatch(toolbarComponent, /kindPalette|setPaletteOpen|KindIcon/);
   assert.match(taskList, /KindIcon kind=\{entry.kind\} onLight/);
   assert.match(taskList, /Binding\.setStatus, entry\.id, status/);
   assert.match(taskList, /createPortal/);
@@ -159,16 +160,21 @@ test("interactive icon styling is shared across Planboard surfaces", async () =>
   assert.match(taskList, /rowStatusMenu/);
   assert.match(taskList, /rowStatusIndicator[\s\S]*aria-hidden="true"/);
   assert.doesNotMatch(taskList, /statusMenu \? "-" : "\+"/);
-  assert.match(mainPanel, /\.taskRow\s*\{[\s\S]*height:\s*44rem[\s\S]*flex:\s*0 0 44rem/);
-  assert.match(mainPanel, /\.rowOpen\s*\{[\s\S]*height:\s*44rem[\s\S]*padding:\s*7rem/);
-  assert.match(mainPanel, /\.rowStatus\s*\{[\s\S]*height:\s*28rem/);
-  assert.match(mainPanel, /\.rowMenuButton\s*\{[\s\S]*height:\s*28rem/);
+  assert.match(
+    mainPanel,
+    /\.taskRow\s*\{[\s\S]*height:\s*tokens\.\$task-row-height[\s\S]*flex:\s*0 0 tokens\.\$task-row-height/,
+  );
+  assert.match(
+    mainPanel,
+    /\.rowOpen\s*\{[\s\S]*height:\s*tokens\.\$task-row-height[\s\S]*padding:\s*7rem/,
+  );
+  assert.match(mainPanel, /\.rowStatus\s*\{[\s\S]*height:\s*tokens\.\$compact-action-height/);
+  assert.match(mainPanel, /\.rowMenuButton\s*\{[\s\S]*height:\s*tokens\.\$compact-action-height/);
   assert.match(mainPanelComponent, /\["all", "open", "doing", "done"\]/);
   assert.match(
     mainPanelComponent,
     /doing: entries\.filter\(\(x\) => x\.status === EntryStatus\.Doing\)/,
   );
-  assert.match(toolbarComponent, /pinControl\.current\?\.contains/);
   assert.match(
     mainPanelComponent,
     /showFilters \? \([\s\S]*styles\.filterArea[\s\S]*categoryChips/,
@@ -236,9 +242,10 @@ test("panel chrome uses shared typography and compact action tokens", async () =
   assert.doesNotMatch(mainPanel, /City Tasks & Map Notes|Subtitle/);
   assert.doesNotMatch(draftPanel, /Complete the note/);
   assert.doesNotMatch(settings, /Planboard\.UI\.Subtitle/);
-  assert.match(tokens, /\$font-panel-title: 15rem/);
-  assert.match(tokens, /\$action-height: 28rem/);
-  assert.match(tokens, /\$compact-action-inset: 8rem/);
+  assert.match(tokens, /\$font-panel-title: var\(--fontSizeXXL, 22rem\)/);
+  assert.match(tokens, /\$compact-action-height: 32rem/);
+  assert.match(tokens, /\$action-height: \$compact-action-height/);
+  assert.match(tokens, /\$compact-action-inset: 10rem/);
   assert.match(tokens, /\$radius-micro: 3rem/);
   assert.match(tokens, /\$radius-compact: \$radius-control/);
   assert.match(tokens, /\$radius-control: 8rem/);
@@ -263,9 +270,12 @@ test("panel chrome uses shared typography and compact action tokens", async () =
   assert.match(mainStyles, /padding: 8rem tokens\.\$editor-gutter/);
   assert.match(
     mainStyles,
-    /\.taskMain \{[\s\S]*height: 30rem[\s\S]*justify-content: space-between/,
+    /\.taskMain \{[\s\S]*height: 34rem[\s\S]*justify-content: space-between/,
   );
-  assert.match(mainStyles, /\.kindBadge \{[\s\S]*width: 30rem[\s\S]*height: 30rem/);
-  assert.match(mainStyles, /\.taskMain strong \{[\s\S]*line-height: 14rem/);
-  assert.match(mainStyles, /\.taskMain span \{[\s\S]*line-height: 10rem/);
+  assert.match(
+    mainStyles,
+    /\.kindBadge \{[\s\S]*width: tokens\.\$task-kind-badge-size[\s\S]*height: tokens\.\$task-kind-badge-size/,
+  );
+  assert.match(mainStyles, /\.taskMain strong \{[\s\S]*line-height: 18rem/);
+  assert.match(mainStyles, /\.taskMain span \{[\s\S]*line-height: 14rem/);
 });

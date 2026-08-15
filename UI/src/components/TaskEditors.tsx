@@ -7,6 +7,7 @@ import { usePlanboardLocale } from "../labels";
 import { dateInputToTicks, isValidDateInput, ticksToDateInput } from "../model";
 import {
   Binding,
+  DateFormat,
   DeadlineMode,
   EntryCategory,
   EntryKind,
@@ -17,6 +18,7 @@ import {
 } from "../types/contracts";
 import { CategoryPicker, KindPicker, PriorityPicker, StatusPicker } from "./EntryControls";
 import { DeadlineCalendar } from "./DeadlineCalendar";
+import { blurTextInputOnEscape, useEscapeDismissal } from "./useEscapeDismissal";
 import styles from "./mainPanel.module.scss";
 
 export type EditorPayload = (string | number)[];
@@ -35,12 +37,14 @@ export type CreateEntry = (
 ) => string | null;
 export function NewEditor({
   deadlineMode,
+  dateFormat,
   realToday,
   gameToday,
   onCancel,
   onCreate,
 }: {
   deadlineMode: DeadlineMode;
+  dateFormat: DateFormat;
   realToday: string;
   gameToday: string;
   onCancel: () => void;
@@ -73,8 +77,48 @@ export function NewEditor({
     [real, setReal] = useState(""),
     [game, setGame] = useState(""),
     [error, setError] = useState<string | null>(null),
-    [metadataOverlay, setMetadataOverlay] = useState<MetadataOverlay>(null);
+    [metadataOverlay, setMetadataOverlay] = useState<MetadataOverlay>(null),
+    [confirmDiscard, setConfirmDiscard] = useState(false);
   const overlayHost = useRef<HTMLDivElement>(null);
+  useEscapeDismissal(
+    100,
+    () => {
+      setMetadataOverlay(null);
+      return true;
+    },
+    metadataOverlay !== null,
+  );
+
+  // New list items are still drafts until Save succeeds. Match placed-pin behaviour so neither
+  // Escape nor the back button silently loses the work a player has entered.
+  const hasChanges =
+    title.trim().length > 0 ||
+    description.trim().length > 0 ||
+    kind !== EntryKind.Task ||
+    category !== EntryCategory.General ||
+    categoryName.trim().length > 0 ||
+    status !== EntryStatus.Open ||
+    priority !== EntryPriority.None ||
+    real.length > 0 ||
+    game.length > 0;
+
+  const requestDiscard = () => {
+    if (hasChanges) {
+      setConfirmDiscard(true);
+      return;
+    }
+    onCancel();
+  };
+
+  useEscapeDismissal(80, () => {
+    if (confirmDiscard) {
+      onCancel();
+      return true;
+    }
+    requestDiscard();
+    return true;
+  });
+
   const submit = (place: boolean) => {
     const cleanTitle = title.trim();
     if (!cleanTitle) {
@@ -106,10 +150,6 @@ export function NewEditor({
       className={styles.editorShell}
       onMouseDown={() => setMetadataOverlay(null)}
       onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          if (metadataOverlay) setMetadataOverlay(null);
-          else onCancel();
-        }
         if (event.key === "Enter" && event.ctrlKey) {
           event.preventDefault();
           submit(true);
@@ -117,7 +157,7 @@ export function NewEditor({
       }}
     >
       <div className={styles.detailTopbar}>
-        <Button variant="flat" onSelect={onCancel}>
+        <Button variant="flat" onSelect={requestDiscard}>
           &lt; Planboard
         </Button>
         <span className={styles.newLabel}>New item</span>
@@ -128,12 +168,13 @@ export function NewEditor({
           className={styles.titleInput}
           value={title}
           maxLength={160}
-          placeholder="What needs attention?"
+          placeholder="Title"
           onChange={(event) => {
             setTitle(event.target.value);
             setError(null);
           }}
           onKeyDown={(event) => {
+            if (blurTextInputOnEscape(event)) return;
             if (event.key === "Enter") {
               event.preventDefault();
               event.stopPropagation();
@@ -171,9 +212,11 @@ export function NewEditor({
               onChange={setCategory}
               onCustom={setCategoryName}
               onOpenChange={(open) => setMetadataOverlay(open ? "category" : null)}
+              overlayHost={overlayHost}
             />
             <DeadlineCalendar
               deadlineMode={deadlineMode}
+              dateFormat={dateFormat}
               value={deadlineMode === "game" ? game : real}
               currentDate={deadlineMode === "game" ? gameToday : realToday}
               open={metadataOverlay === "deadline"}
@@ -185,24 +228,39 @@ export function NewEditor({
           <StatusPicker value={status} labels={s} onChange={setStatus} />
           <PriorityPicker value={priority} labels={p} onChange={setPriority} />
         </div>
-        <div className={styles.field}>
-          <span>Description</span>
+        <div className={`${styles.field} ${styles.placeholderField}`}>
           <textarea
             aria-label="Description"
             className={styles.descriptionInput}
             value={description}
             maxLength={4000}
+            placeholder="Description (optional)"
             onChange={(event) => setDescription(event.target.value)}
+            onKeyDown={blurTextInputOnEscape}
           />
         </div>
       </div>
       <div className={styles.createActions}>
-        <Button variant="flat" onSelect={onCancel}>
-          Cancel
-        </Button>
-        <Button variant="primary" title="Create item (Enter)" onSelect={() => submit(false)}>
-          Create item
-        </Button>
+        {confirmDiscard ? (
+          <>
+            <span className={styles.createDiscardMessage}>Discard this unsaved task?</span>
+            <Button variant="flat" onSelect={() => setConfirmDiscard(false)}>
+              Keep editing
+            </Button>
+            <Button variant="flat" className={styles.createDiscardButton} onSelect={onCancel}>
+              Discard
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="flat" onSelect={requestDiscard}>
+              Discard
+            </Button>
+            <Button variant="primary" title="Save item (Enter)" onSelect={() => submit(false)}>
+              Save
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -210,6 +268,7 @@ export function NewEditor({
 export function Editor({
   entry,
   deadlineMode,
+  dateFormat,
   realToday,
   gameToday,
   onBack,
@@ -217,6 +276,7 @@ export function Editor({
 }: {
   entry: EntryView;
   deadlineMode: DeadlineMode;
+  dateFormat: DateFormat;
   realToday: string;
   gameToday: string;
   onBack: () => void;
@@ -239,6 +299,14 @@ export function Editor({
     [game, setGame] = useState(ticksToDateInput(entry.gameDueDateTicks)),
     [metadataOverlay, setMetadataOverlay] = useState<MetadataOverlay>(null);
   const overlayHost = useRef<HTMLDivElement>(null);
+  useEscapeDismissal(
+    100,
+    () => {
+      setMetadataOverlay(null);
+      return true;
+    },
+    metadataOverlay !== null,
+  );
   const initialPayload = useRef([
     entry.title,
     entry.description,
@@ -281,17 +349,13 @@ export function Editor({
     : entry.linkState === LinkState.Valid
       ? "Pinned to a city object"
       : "Pinned to map";
+  const locations = entry.locations ?? [];
+  const hasDistrictLocation = locations.some((location) => location.hasDistrict);
   return (
     <div
       ref={overlayHost}
       className={styles.editorShell}
       onMouseDown={() => setMetadataOverlay(null)}
-      onKeyDown={(event) => {
-        if (event.key === "Escape" && metadataOverlay) {
-          event.stopPropagation();
-          setMetadataOverlay(null);
-        }
-      }}
     >
       <div className={styles.detailTopbar}>
         <Button variant="flat" onSelect={onBack}>
@@ -311,36 +375,86 @@ export function Editor({
           className={styles.titleInput}
           value={title}
           maxLength={160}
+          placeholder="Title"
           onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={blurTextInputOnEscape}
         />
         <div className={styles.locationCard}>
-          <div className={styles.locationInfo}>
-            <span className={styles.pinGlyph}>P</span>
-            <span className={styles.locationText}>
-              <strong>{entry.hasLocation ? locationContext : "Not yet placed on the map"}</strong>
-              <span>
-                {entry.hasLocation
-                  ? `Map coordinates ${Math.round(entry.x)}, ${Math.round(entry.z)}`
-                  : "Add a pin to give this entry spatial context"}
+          <div className={styles.locationHeader}>
+            <div className={styles.locationInfo}>
+              <span className={styles.pinGlyph}>P</span>
+              <span className={styles.locationText}>
+                <strong>{entry.hasLocation ? locationContext : "Not yet placed on the map"}</strong>
+                <span>
+                  {entry.hasLocation
+                    ? hasDistrictLocation
+                      ? "Locked to the district centre"
+                      : `${locations.length} ${locations.length === 1 ? "pin" : "pins"}`
+                    : "Add a pin to give this entry spatial context"}
+                </span>
               </span>
-            </span>
+            </div>
+            <div className={styles.locationActions}>
+              {!entry.hasLocation && (
+                <Button
+                  variant="flat"
+                  onSelect={() => trigger(Binding.group, Binding.beginPlacement, entry.id)}
+                >
+                  Place on map
+                </Button>
+              )}
+              {entry.hasLocation && !hasDistrictLocation && (
+                <Button
+                  variant="flat"
+                  onSelect={() => trigger(Binding.group, Binding.addLocation, entry.id)}
+                >
+                  + Add more pins
+                </Button>
+              )}
+            </div>
           </div>
-          <div className={styles.locationActions}>
-            {entry.hasLocation && (
-              <Button
-                variant="flat"
-                onSelect={() => trigger(Binding.group, Binding.navigateToEntry, entry.id)}
-              >
-                View
-              </Button>
-            )}
-            <Button
-              variant="flat"
-              onSelect={() => trigger(Binding.group, Binding.beginPlacement, entry.id)}
+          {locations.length > 0 && !hasDistrictLocation && (
+            <div
+              className={`${styles.locationList} ${
+                locations.length > 4 ? styles.locationListOverflow : ""
+              }`}
             >
-              {entry.hasLocation ? "Move" : "Place on map"}
-            </Button>
-          </div>
+              {locations.map((location, index) => (
+                <div key={location.id} className={styles.locationRow}>
+                  <span>
+                    Pin {index + 1} · {Math.round(location.x)}, {Math.round(location.z)}
+                  </span>
+                  <div>
+                    <Button
+                      variant="flat"
+                      onSelect={() =>
+                        trigger(Binding.group, Binding.navigateToLocation, entry.id, location.id)
+                      }
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="flat"
+                      onSelect={() =>
+                        trigger(Binding.group, Binding.moveLocation, entry.id, location.id)
+                      }
+                    >
+                      Move
+                    </Button>
+                    <Button
+                      variant="flat"
+                      className={styles.locationRemove}
+                      onSelect={() =>
+                        trigger(Binding.group, Binding.removeLocation, entry.id, location.id)
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         <div className={styles.grid}>
           <KindPicker value={kind} labels={k} onChange={setKind} />
@@ -353,9 +467,11 @@ export function Editor({
               onChange={setCategory}
               onCustom={setCategoryName}
               onOpenChange={(open) => setMetadataOverlay(open ? "category" : null)}
+              overlayHost={overlayHost}
             />
             <DeadlineCalendar
               deadlineMode={deadlineMode}
+              dateFormat={dateFormat}
               value={deadlineMode === "game" ? game : real}
               currentDate={deadlineMode === "game" ? gameToday : realToday}
               open={metadataOverlay === "deadline"}
@@ -367,25 +483,17 @@ export function Editor({
           <StatusPicker value={status} labels={s} onChange={setStatus} />
           <PriorityPicker value={priority} labels={p} onChange={setPriority} />
         </div>
-        <div className={styles.field}>
-          <span>Description</span>
+        <div className={`${styles.field} ${styles.placeholderField}`}>
           <textarea
             aria-label="Description"
             className={styles.descriptionInput}
             value={description}
             maxLength={4000}
+            placeholder="Description (optional)"
             onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={blurTextInputOnEscape}
           />
         </div>
-        {entry.hasLocation && (
-          <Button
-            variant="flat"
-            className={styles.removePin}
-            onSelect={() => trigger(Binding.group, Binding.removeLocation, entry.id)}
-          >
-            Remove map pin
-          </Button>
-        )}
       </div>
       <div className={styles.autosave}>
         <span></span>Changes save automatically

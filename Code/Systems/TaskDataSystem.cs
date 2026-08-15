@@ -13,7 +13,7 @@ namespace Planboard.Systems
 {
     public partial class TaskDataSystem : GameSystemBase, IDefaultSerializable
     {
-        public const int CurrentFormatVersion = 2;
+        public const int CurrentFormatVersion = 3;
         public const int MaxCategoryLength = 40;
         public const int MaxTitleLength = 160;
         public const int MaxDescriptionLength = 4000;
@@ -48,6 +48,57 @@ namespace Planboard.Systems
         }
 
         public TaskEntry Find(int id) => _entries.FirstOrDefault(entry => entry.Id == id);
+
+        /// <summary>
+        /// Resolves a district-linked entry at display time. The stored position remains a
+        /// deliberate fallback, so changing a district never dirties the city save every frame.
+        /// </summary>
+        public bool TryGetDistrictCenter(TaskEntry entry, out float3 center)
+        {
+            return TryGetDistrictCenter(entry?.PrimaryLocation, out center);
+        }
+
+        public bool TryGetDistrictCenter(TaskLocation location, out float3 center)
+        {
+            center = location?.Position ?? default;
+            if (location == null || location.LinkedDistrict == Entity.Null ||
+                !EntityManager.Exists(location.LinkedDistrict) ||
+                !EntityManager.HasComponent<Game.Areas.District>(location.LinkedDistrict) ||
+                !EntityManager.HasComponent<Game.Areas.Geometry>(location.LinkedDistrict))
+            {
+                return false;
+            }
+
+            float3 candidate = EntityManager.GetComponentData<Game.Areas.Geometry>(location.LinkedDistrict).m_CenterPosition;
+            if (!math.all(math.isfinite(candidate))) return false;
+            center = candidate;
+            return true;
+        }
+
+        public float3 GetResolvedPosition(TaskEntry entry)
+        {
+            return GetResolvedPosition(entry?.PrimaryLocation);
+        }
+
+        public float3 GetResolvedPosition(TaskLocation location)
+        {
+            return TryGetDistrictCenter(location, out float3 center) ? center : location?.Position ?? default;
+        }
+
+        public LinkState GetResolvedLinkState(TaskEntry entry)
+        {
+            return GetResolvedLinkState(entry?.PrimaryLocation);
+        }
+
+        public LinkState GetResolvedLinkState(TaskLocation location)
+        {
+            if (location == null) return LinkState.Unlinked;
+            bool hasLink = location.LinkedEntity != Entity.Null || location.LinkedDistrict != Entity.Null;
+            if (!hasLink) return LinkState.Unlinked;
+            bool entityExists = location.LinkedEntity == Entity.Null || EntityManager.Exists(location.LinkedEntity);
+            bool districtExists = location.LinkedDistrict == Entity.Null || TryGetDistrictCenter(location, out _);
+            return entityExists && districtExists ? LinkState.Valid : LinkState.Missing;
+        }
 
         public int CreateEntry(string title, EntryKind kind, EntryCategory category, string customCategory = "", bool transient = false)
         {
@@ -163,34 +214,39 @@ namespace Planboard.Systems
             return true;
         }
 
-        public bool SetLocation(int id, float3 position, Entity linkedEntity, Entity linkedDistrict, bool markerMoved)
+        public bool SetLocation(int id, float3 position, Entity linkedEntity, Entity linkedDistrict, bool markerMoved, int locationId = 0)
         {
             if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null || !math.all(math.isfinite(position))) return false;
-            entry.SpatialKind = SpatialKind.Point;
-            entry.Position = position;
-            entry.LinkedEntity = linkedEntity;
-            entry.LinkedDistrict = linkedDistrict;
-            entry.MarkerMoved = markerMoved;
-            entry.LinkState = linkedEntity != Entity.Null || linkedDistrict != Entity.Null ? LinkState.Valid : LinkState.Unlinked;
+            TaskLocation location = locationId > 0 ? entry.Locations.FirstOrDefault(item => item.Id == locationId) : null;
+            if (location == null)
+            {
+                location = new TaskLocation { Id = entry.NextLocationId++ };
+                entry.Locations.Add(location);
+            }
+
+            location.SpatialKind = SpatialKind.Point;
+            location.Position = position;
+            location.LinkedEntity = linkedEntity;
+            location.LinkedDistrict = linkedDistrict;
+            location.MarkerMoved = markerMoved;
+            location.LinkState = linkedEntity != Entity.Null || linkedDistrict != Entity.Null ? LinkState.Valid : LinkState.Unlinked;
+            entry.SyncLegacyLocation();
             entry.UpdatedUtcTicks = DateTime.UtcNow.Ticks;
             Touch();
             return true;
         }
 
-        public bool RemoveLocation(int id)
+        public bool RemoveLocation(int id, int locationId = 0)
         {
             if (IsReadOnly) return false;
             TaskEntry entry = Find(id);
             if (entry == null) return false;
-            if (!entry.HasLocation && entry.LinkedEntity == Entity.Null && entry.LinkedDistrict == Entity.Null) return true;
-            entry.SpatialKind = SpatialKind.None;
-            entry.Position = default;
-            entry.LinkedEntity = Entity.Null;
-            entry.LinkedDistrict = Entity.Null;
-            entry.MarkerMoved = false;
-            entry.LinkState = LinkState.Unlinked;
+            TaskLocation location = locationId > 0 ? entry.Locations.FirstOrDefault(item => item.Id == locationId) : entry.PrimaryLocation;
+            if (location == null) return true;
+            entry.Locations.Remove(location);
+            entry.SyncLegacyLocation();
             entry.UpdatedUtcTicks = DateTime.UtcNow.Ticks;
             Touch();
             return true;
@@ -233,23 +289,27 @@ namespace Planboard.Systems
                 entry.RealDueDateTicks = SanitizeTicks(entry.RealDueDateTicks);
                 entry.GameDueDateTicks = SanitizeTicks(entry.GameDueDateTicks);
 
-                if (entry.SpatialKind != SpatialKind.None && entry.SpatialKind != SpatialKind.Point)
+                HashSet<int> locationIds = new();
+                for (int locationIndex = entry.Locations.Count - 1; locationIndex >= 0; locationIndex--)
                 {
-                    entry.SpatialKind = SpatialKind.None;
-                    AddIssue(DataIssueSeverity.Warning, entry.Id, "Used unsupported V1 geometry and was changed to list-only.");
-                }
-                if (entry.HasLocation && !math.all(math.isfinite(entry.Position)))
-                {
-                    entry.SpatialKind = SpatialKind.None;
-                    entry.Position = default;
-                    AddIssue(DataIssueSeverity.Warning, entry.Id, "Had invalid coordinates and was changed to list-only.");
+                    TaskLocation location = entry.Locations[locationIndex];
+                    if (location == null || location.Id <= 0 || !locationIds.Add(location.Id) ||
+                        location.SpatialKind != SpatialKind.Point || !math.all(math.isfinite(location.Position)))
+                    {
+                        entry.Locations.RemoveAt(locationIndex);
+                        AddIssue(DataIssueSeverity.Warning, entry.Id, "Had an invalid map pin and it was removed.");
+                        continue;
+                    }
+
+                    bool linked = location.LinkedEntity != Entity.Null || location.LinkedDistrict != Entity.Null;
+                    bool valid = !linked ||
+                        (location.LinkedEntity == Entity.Null || entityManager.Exists(location.LinkedEntity)) &&
+                        (location.LinkedDistrict == Entity.Null || entityManager.Exists(location.LinkedDistrict));
+                    location.LinkState = !linked ? LinkState.Unlinked : valid ? LinkState.Valid : LinkState.Missing;
                 }
 
-                bool linked = entry.LinkedEntity != Entity.Null || entry.LinkedDistrict != Entity.Null;
-                bool valid = !linked ||
-                    (entry.LinkedEntity == Entity.Null || entityManager.Exists(entry.LinkedEntity)) &&
-                    (entry.LinkedDistrict == Entity.Null || entityManager.Exists(entry.LinkedDistrict));
-                entry.LinkState = !linked ? LinkState.Unlinked : valid ? LinkState.Valid : LinkState.Missing;
+                entry.NextLocationId = Math.Max(entry.NextLocationId, locationIds.Count == 0 ? 1 : locationIds.Max() + 1);
+                entry.SyncLegacyLocation();
             }
 
             _nextId = Math.Max(_nextId, maxId + 1);
@@ -320,6 +380,9 @@ namespace Planboard.Systems
             writer.Write(persistentCount);
             foreach (TaskEntry entry in _entries.Where(entry => !_transientEntryIds.Contains(entry.Id)))
             {
+                // The V2 fields remain as a primary-location compatibility mirror. V3 adds
+                // the full collection immediately after them, so older saves migrate safely.
+                entry.SyncLegacyLocation();
                 writer.Write(entry.Id);
                 writer.Write(entry.Title);
                 writer.Write(entry.Description);
@@ -339,6 +402,18 @@ namespace Planboard.Systems
                 writer.Write(entry.LinkedDistrict);
                 writer.Write(entry.MarkerMoved);
                 writer.Write(entry.CustomCategory);
+                writer.Write(entry.Locations.Count);
+                foreach (TaskLocation location in entry.Locations)
+                {
+                    writer.Write(location.Id);
+                    writer.Write((byte)location.SpatialKind);
+                    writer.Write(location.Position.x);
+                    writer.Write(location.Position.y);
+                    writer.Write(location.Position.z);
+                    writer.Write(location.LinkedEntity);
+                    writer.Write(location.LinkedDistrict);
+                    writer.Write(location.MarkerMoved);
+                }
             }
         }
 
@@ -391,6 +466,39 @@ namespace Planboard.Systems
                 reader.Read(out entry.LinkedDistrict);
                 reader.Read(out entry.MarkerMoved);
                 if (version >= 2) reader.Read(out entry.CustomCategory);
+                if (version >= 3)
+                {
+                    reader.Read(out int locationCount);
+                    locationCount = Math.Max(0, locationCount);
+                    for (int locationIndex = 0; locationIndex < locationCount; locationIndex++)
+                    {
+                        TaskLocation location = new();
+                        reader.Read(out location.Id);
+                        reader.Read(out byte locationKind); location.SpatialKind = (SpatialKind)locationKind;
+                        reader.Read(out location.Position.x);
+                        reader.Read(out location.Position.y);
+                        reader.Read(out location.Position.z);
+                        reader.Read(out location.LinkedEntity);
+                        reader.Read(out location.LinkedDistrict);
+                        reader.Read(out location.MarkerMoved);
+                        entry.Locations.Add(location);
+                    }
+                }
+                else if (entry.SpatialKind == SpatialKind.Point && math.all(math.isfinite(entry.Position)))
+                {
+                    entry.Locations.Add(new TaskLocation
+                    {
+                        Id = 1,
+                        SpatialKind = entry.SpatialKind,
+                        Position = entry.Position,
+                        LinkedEntity = entry.LinkedEntity,
+                        LinkedDistrict = entry.LinkedDistrict,
+                        MarkerMoved = entry.MarkerMoved,
+                        LinkState = entry.LinkState,
+                    });
+                }
+                entry.NextLocationId = entry.Locations.Count == 0 ? 1 : entry.Locations.Max(location => location.Id) + 1;
+                entry.SyncLegacyLocation();
                 if (i < MaxEntries) _entries.Add(entry);
             }
             _pendingValidation = true;

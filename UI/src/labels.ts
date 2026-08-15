@@ -8,7 +8,7 @@ export const fallbackPriorityLabels = ["None", "Low", "Medium", "High"] as const
 export const fallbackCategoryLabels = [
   "Traffic",
   "Roads",
-  "Public Transport",
+  "Transit",
   "Walking & Cycling",
   "Zoning & Development",
   "City Services",
