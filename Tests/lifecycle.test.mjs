@@ -220,6 +220,8 @@ test("draft keeps direct details with compact custom and full-list category acti
   assert.match(draftStyles, /\.customCategoryField/);
   assert.match(draftStyles, /\.categoryChips\s*\{[^}]*flex-wrap:\s*nowrap/);
   assert.match(draftStyles, /@include tokens\.panel-scrollbar/);
+  assert.match(draftStyles, /\.content\s*\{[^}]*min-height:\s*0[^}]*flex:\s*1 1 auto/s);
+  assert.match(draftStyles, /\.overlayHost\s*\{[^}]*height:\s*100%/);
   assert.match(draftStyles, /::placeholder\s*\{[^}]*opacity:\s*1/);
   assert.doesNotMatch(draftStyles, /\.otherCategory|\.moreDetails|\.detailsToggle/);
   assert.doesNotMatch(draftStyles, /^\.priority/m);
