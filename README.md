@@ -25,8 +25,10 @@ Planboard 0.1.6 is available as a public beta. Feedback, bug reports, and featur
 
 - Added direct pin placement, a focused draft, and safer Escape/discard handling.
 - Added several map pins to one task, including continuous **Add more pins** placement.
-- Added live district-centre notes and a Planboard section in the district inspector.
-- Improved category editing, scrolling, sticky notes, marker cards, pop-ups, and readable text sizing.
+- Added live district-centre notes, stacked district markers, and a Planboard section in the district inspector.
+- Restored the full Pin placed form with recent/custom categories, priority, description, and a focused title field.
+- Improved Gameface scrolling: task lists, editors, Pin placed, pin collections, and district rows now support wheel and draggable-scrollbar input.
+- Improved sticky notes, marker cards, pop-ups, category editing, and readable text sizing.
 - Completed tasks now hide from the map while remaining in the task list.
 
 ### 0.1.5 - 2026-08-13
